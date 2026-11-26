@@ -17,3 +17,4 @@ Keep this file short. Newest information wins.
  endgame.ts: Outcome = continue | winner{winnerId, decidedBy} | suddenDeath{contenders}. timelineOutcome(players[{id,cards,artistHits}], target?) (call after each round), closestYearOutcome(players[{id,score}]) (after last round; isClosestYearOver(roundsPlayed)), resolveSuddenDeathRound([{id, year|null}], truthYear) (pass only current contenders; repeat while status=suddenDeath), rankTimeline, rankClosestYear.
  selection.ts: chooseNextSong(pool, {playedThisGame, playedEarlier?, blocked?, yearRange?}, rng) -> {status:ok, song, remaining} | {status:exhausted, resetWouldHelp}; availableSongs(pool, filters).
  names.ts: decideJoin(seats[{id,name,connected}], name) -> new | reclaim{seatId} | rejected{reason: empty|too-long|taken|full}; NAME_TAKEN_MESSAGE.
+- [done 2026-11-26 19:10] 02-logic: Pure logic modules (config, matcher, timeline, scoring, endgame, selection, names) with 90 new tests, all passing

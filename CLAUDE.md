@@ -1,6 +1,6 @@
-# Jukebox (Hitster-style party game): standing rules for every session
+# Jukebox (party music game): standing rules for every session
 
-A Jackbox-style web game (host screen plus phones) where about 10 friends play a Hitster-like music game simultaneously. The full plan is in `PLAN.md`; `plan/` has the same content split by section. This repo is built by an automated sequence of small phases, each in a fresh session.
+A Jackbox-style web game (host screen plus phones) where about 10 friends play a music-timeline guessing game simultaneously. The full plan is in `PLAN.md`; `plan/` has the same content split by section. This repo is built by an automated sequence of small phases, each in a fresh session.
 
 ## Every session
 - Read `.build/NOTES.md` first. It holds decisions, file locations and commands from earlier phases.

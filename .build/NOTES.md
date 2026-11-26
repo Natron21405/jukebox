@@ -103,3 +103,4 @@ Correction: 04-verifyA:1980s-11 actual counts are 37 high, 3 medium, 0 low (40 a
 - [done 2026-11-26 20:10] 04-verifyA:2010s-07: 40 songs answered blind: 35 high, 5 medium, 0 low
 04-verifyA:2010s-09: id 2010s-335 title/artist pairing could not be confirmed as a real recording; answered low (guess). Curator/reconciler should check the pairing.
 - [done 2026-11-26 20:10] 04-verifyA:2010s-09: 25 songs answered blind: 21 high, 3 medium, 1 low
+- [done 2026-11-26 20:10] 04-verifyA:2020s-01: 40 songs answered blind: 39 high, 1 medium, 0 low

@@ -29,6 +29,13 @@ export const CONFIG = {
 
   artistBonus: 2,
 
+  net: {
+    /** Phones ping this often so the database knows the seat is alive (seat is "live" for 60 s after a ping). */
+    heartbeatSeconds: 20,
+    /** The host re-syncs the connected flags from presence this often, on top of every presence change. */
+    presenceSyncSeconds: 15,
+  },
+
   matcher: {
     /** Typo tolerance by length of the (spaceless, normalised) target. Last row whose minLength <= length applies. */
     editsByLength: [

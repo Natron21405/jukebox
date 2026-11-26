@@ -160,3 +160,5 @@ Correction: 04-verifyA:1980s-11 actual counts are 37 high, 3 medium, 0 low (40 a
 - [done 2026-11-26 20:24] 04-verifyB:1990s-04: 40 songs answered blind: 36 high, 4 medium, 0 low
 04-verifyB:1990s-08: medium ids 1990s-287, 288, 291, 292, 303, 304, 311, 314, 316, 318, 320 are album-before-single (used earlier album year); 1990s-300 the .NUXX version single is 1996 (original B-side mix 1995). Reconciler should decide.
 - [done 2026-11-26 20:24] 04-verifyB:1990s-08: 40 songs answered blind: 28 high, 12 medium, 0 low
+04-verifyB:1990s-09: medium ids 1990s-326, 341, 350, 351, 353 are album-before-single (used earlier album year); 1990s-328 (album Nov 1997 vs single Nov 1997/Jan 1998; answered 1997); 1990s-359 (NL single May 1998, worldwide Nov 1998; answered 1998). Reconciler should decide.
+- [done 2026-11-26 20:25] 04-verifyB:1990s-09: 40 songs answered blind: 33 high, 7 medium, 0 low

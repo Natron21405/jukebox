@@ -138,3 +138,5 @@ Correction: 04-verifyA:1980s-11 actual counts are 37 high, 3 medium, 0 low (40 a
 - [done 2026-11-26 20:21] 04-verifyB:1980s-08: 40 songs answered blind: 38 high, 2 medium, 0 low
 04-verifyB:1980s-07: medium ids 1980s-247, 265, 268: album/soundtrack track released a few weeks before the single (single in the following year for 247 and 265); I used the earlier album/soundtrack year. Reconciler should decide.
 - [done 2026-11-26 20:21] 04-verifyB:1980s-07: 40 songs answered blind: 37 high, 3 medium, 0 low
+04-verifyB:1980s-09: medium ids 1980s-330 (single vs album date) and 1980s-347 (album track Nov 1983 before 1984 single/soundtrack); I used the earlier album year. Reconciler should decide.
+- [done 2026-11-26 20:21] 04-verifyB:1980s-09: 40 songs answered blind: 38 high, 2 medium, 0 low

@@ -41,6 +41,7 @@ Repo layout: `app/` (web app, Vite + TypeScript), `supabase/migrations/` (SQL), 
 | Production build | `cd app && npm run build` (output in `app/dist`) |
 | Realtime + database smoke test | `node tools/smoke-realtime.mjs` |
 | Apple preview smoke test (about 70 s, counts only) | `node tools/smoke-itunes.mjs` |
+| Bot simulation against the real project (about 3 min, counts and timings only) | `node tools/simulate.mjs` (options: `--modes timeline`, `--bots 10`, `--rounds 8`, `--target 6`, `--seconds 15`) |
 
 Secrets live in the root `.env` (git-ignored). Only `SUPABASE_URL` and `SUPABASE_PUBLISHABLE_KEY` go to the browser (as `VITE_*` variables in `app/.env` or GitHub Actions secrets). `SUPABASE_DB_URL` is used locally only, to apply migrations.
 
@@ -48,6 +49,22 @@ Secrets live in the root `.env` (git-ignored). Only `SUPABASE_URL` and `SUPABASE
 
 Song pool: 2050 songs (1950s: 40, 1960s: 140, 1970s: 350, 1980s: 400, 1990s: 400, 2000s: 350, 2010s: 300, 2020s: 70). Built by `node tools/finalize-songs.mjs` from the verified songs and the resolved Apple preview links; only songs with a working preview are kept, non-extra songs first, then extras, up to each decade target.
 
+
+## Realtime volume (free tier)
+
+Measured by `node tools/simulate.mjs` (12 bot phones + host, every WebSocket frame counted, with bots refreshing every 6 to 16 s, which is far more churn than a real party). Supabase Free limits ([docs](https://supabase.com/docs/guides/realtime/limits)): 200 concurrent connections, 100 messages per second, 100 channel joins per second, 20 presence messages per second, 2 million messages per month. A database change counts once for each client listening to it.
+
+| Measure | Result (12 phones + host) | Free limit |
+| --- | --- | --- |
+| Concurrent connections | 13 | 200 |
+| Messages to clients per minute of play | about 3,200 to 3,500 (Closest Year 6 rounds: about 3,900 per game; Timeline: about 2,700 to 3,100) | n/a |
+| Mix | database changes 4,514, presence 2,153, other 0 (two games) | n/a |
+| Database changes by table | players 2,249, round_locks 1,390, rooms 517, rounds 358 | n/a |
+| Peak in one second | 196 to 281 (a reveal: about a dozen player rows times 13 listeners), 14 of 119 active seconds above 100 | 100 per second |
+| Channel joins (all refreshes included) | about 106 to 154 per game over 50 to 70 s (about 2 per second on average) | 100 per second |
+| Monthly budget | about 650 messages per round including the refresh churn, so a 20-round game is roughly 15,000 messages and the 2 million allowance is about 130 such games a month | 2 million |
+
+Reading: connections, joins and the monthly allowance have a lot of headroom. The one number above its nominal limit is the burst at each reveal. No bot was disconnected and no update was lost in 2 runs of 2 games, but if Supabase ever starts enforcing 100 per second on a free project, the cheapest fixes are (1) phones stop listening to the `players` table and read their own row through `get_my_state`, and (2) the host writes all players in one statement and the scoreboard is rebuilt from the reveal payload. Not done now, to keep the app small.
 
 # Decisions
 
@@ -97,3 +114,5 @@ Each architecture decision and the reason for it. Add to this list as phases mak
 - **The restore list gets titles by loading the song list in the host's browser.** The database only stores song ids (so it holds no spoilers). `app/src/ui/hostSongs.ts` joins the blocked ids to the song list on the host screen only. An id that is no longer in the list is still shown (as "Song no longer in the list") so it can be restored.
 - **Destructive or surprising host actions use a two-step confirm (`app/src/ui/songTools.ts`).** "Reset played songs" first explains that it makes every song available again, then asks to confirm or cancel. The same helper holds the "Remove from future games" control (with Undo) and the exhausted-pool notice.
 - **A used-up pool says why, and offers a reset only when it would help.** `chooseNextSong` reports `resetWouldHelp`. If earlier games used the songs, the host sees a friendly message with the confirmed reset. If the songs are all used in this game or blocked, no reset is offered and the message points to the Song settings screen. Pure text and counts are in `app/src/logic/songLibrary.ts`.
+- **Bot simulation runs the real net and game layers through vite-node, not a browser (`tools/simulate.mjs` + `tools/simulate-run.ts`).** It uses the same Supabase calls and the same host and phone controllers as the screens, against the real project with throwaway rooms that are deleted at the end (also on Ctrl-C). A killed "page" simulates a closed tab (no goodbye), and a graceful stop simulates moving to another device. The checks re-derive scores and placements from the answers the bots were told were saved, so they do not trust the app's own output. It prints counts and timings only; violations name round and bot numbers, never song fields.
+- **A goodbye is not undone by stale presence (migration `20261126220000_goodbye_stays_away.sql`).** The simulation found that a phone saying goodbye was marked connected again within a second by the host's presence mirror, so a player moving to a new device got "name taken" for up to about 25 s. Now `seat_ping(false)` back-dates `last_seen`, and `host_set_connected` only marks a seat connected from presence if it was heard from in the last 10 minutes. A returning phone always sends a heartbeat or rejoins first, so real reconnects are unaffected.

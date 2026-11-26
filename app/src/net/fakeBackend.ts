@@ -181,7 +181,7 @@ export function createFakeBackend(start = Date.UTC(2026, 0, 1)): FakeBackend {
     async seatPing(token, connected) {
       const p = playerBySeat(token);
       if (!p) return false;
-      seats.get(p.id)!.lastSeen = clock;
+      seats.get(p.id)!.lastSeen = connected ? clock : clock - 3_600_000; // a goodbye back-dates the seat
       if (p.connected !== connected) setPlayer(p, { connected });
       return true;
     },
@@ -299,7 +299,7 @@ export function createFakeBackend(start = Date.UTC(2026, 0, 1)): FakeBackend {
       host(roomId, token);
       for (const p of roomPlayers(roomId)) {
         const here = ids.includes(p.id);
-        if (here && !p.connected) setPlayer(p, { connected: true });
+        if (here && !p.connected && clock - (seats.get(p.id)?.lastSeen ?? 0) < 600_000) setPlayer(p, { connected: true });
         else if (!here && p.connected && clock - (seats.get(p.id)?.lastSeen ?? 0) > PRESENCE_GRACE_MS) setPlayer(p, { connected: false });
       }
     },

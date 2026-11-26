@@ -113,6 +113,17 @@ export function backendContract(label: string, make: () => Backend, opts: { afte
       expect(!c.r.ok && c.r.reason).toBe('taken');
     });
 
+    it('a goodbye is not undone by stale presence on the host screen', async () => {
+      const { creds } = await newRoom();
+      const a = await phone(creds.code, 'Sam');
+      if (!a.r.ok) throw new Error('join failed');
+      await backend.seatPing(a.r.seat.seatToken, false); // phone says goodbye
+      await backend.hostSetConnected(creds.roomId, creds.hostToken, [a.r.seat.playerId]); // host still lists it as present
+      expect((await backend.getPlayers(creds.roomId))[0].connected).toBe(false);
+      const b = await phone(creds.code, 'Sam');
+      expect(b.r.ok && b.r.kind).toBe('reclaimed');
+    });
+
     it('resumes with the remembered seat even if the flag says disconnected', async () => {
       const { creds } = await newRoom();
       const a = await phone(creds.code, 'Kim');
@@ -284,11 +295,11 @@ export function backendContract(label: string, make: () => Backend, opts: { afte
       expect(await loadPublicState(backend, creds.roomId)).toMatchObject({ locked: [a.r.seat.playerId], round: { status: 'revealed' } });
     });
 
-    it('mirrors presence into the connected flag', async () => {
+    it('presence alone does not bring back a seat that said goodbye; a heartbeat does', async () => {
       const { creds, host } = await newRoom();
       const a = await phone(creds.code, 'Pres');
       if (!a.r.ok) throw new Error('join failed');
-      await backend.seatPing(a.r.seat.seatToken, false); // flag says away, but the page is about to be open
+      await backend.seatPing(a.r.seat.seatToken, false); // goodbye
       expect((await backend.getPlayers(creds.roomId))[0].connected).toBe(false);
       const stopMirror = await host.mirrorPresence();
       cleanups.push(stopMirror);
@@ -296,6 +307,9 @@ export function backendContract(label: string, make: () => Backend, opts: { afte
       const phoneSide = opts.makeOther?.() ?? backend;
       const untrack = await phoneSide.trackPresence(creds.code, a.r.seat.playerId);
       cleanups.push(untrack);
+      await new Promise((r) => setTimeout(r, 1500)); // let the host see the presence and push it
+      expect((await backend.getPlayers(creds.roomId))[0].connected).toBe(false);
+      await backend.seatPing(a.r.seat.seatToken, true); // what a returning phone does first
       const seen = await until(() => backend.getPlayers(creds.roomId), (ps) => ps[0]?.connected === true);
       expect(seen[0].connected).toBe(true);
     });

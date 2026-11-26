@@ -152,3 +152,5 @@ Correction: 04-verifyA:1980s-11 actual counts are 37 high, 3 medium, 0 low (40 a
 - [done 2026-11-26 20:23] 04-verifyB:1990s-01: 40 songs answered blind: 36 high, 4 medium, 0 low
 04-verifyB:1990s-03: medium ids 1990s-088, 089, 103, 105 (album before later single), 112 (album 1991 before Jan 1992 single), 108 (indie 1989 recording exists; answered major-label 1992), 117 and 120 (Dec 1992 vs Jan 1993 release dates), 099 (debut single 1992). Reconciler should decide.
 - [done 2026-11-26 20:23] 04-verifyB:1990s-03: 40 songs answered blind: 31 high, 9 medium, 0 low
+04-verifyB:1990s-05: medium ids 1990s-164, 165, 166, 169, 171, 172, 183 are album-before-single (used earlier album year); 1990s-177 album Jul 1995, single Apr 1996 (used 1995). Reconciler should decide.
+- [done 2026-11-26 20:23] 04-verifyB:1990s-05: 40 songs answered blind: 32 high, 8 medium, 0 low

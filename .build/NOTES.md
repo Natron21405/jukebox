@@ -213,3 +213,5 @@ Correction: 04-verifyA:1980s-11 actual counts are 37 high, 3 medium, 0 low (40 a
 - [done 2026-11-26 20:33] 04-verifyB:2020s-01: 40 songs answered blind: 40 high, 0 medium, 0 low
 04-verifyB:2020s-02: medium ids 2020s-055, 072, 075 hinge on single/album release dates. Reconciler should decide.
 - [done 2026-11-26 20:33] 04-verifyB:2020s-02: 40 songs answered blind: 37 high, 3 medium, 0 low
+05-resolve:d-002 resolved 8/8 (0 null). One id (2000s-397) first released 2012, outside the 2000s bucket: drop or re-bucket.
+- [done 2026-11-26 20:34] 05-resolve:d-002: 8 disputed songs resolved with sources, 0 set to null; one falls outside its decade bucket

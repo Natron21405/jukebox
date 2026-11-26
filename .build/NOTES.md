@@ -201,3 +201,5 @@ Correction: 04-verifyA:1980s-11 actual counts are 37 high, 3 medium, 0 low (40 a
 - [done 2026-11-26 20:31] 04-verifyB:2010s-06: 40 songs answered blind: 39 high, 1 medium, 0 low
 04-verifyB:2010s-04: medium ids 2010s-123 (single Aug 2012), 127 (free EP Nov 2012 before 2013 single), 148 (album before 2014 single), 156 (Norway single Apr 2013, intl 2014), 158 (Italy radio Dec 2013, UK 2014), 159 (album before single) hinge on release dates. Reconciler should decide.
 - [done 2026-11-26 20:31] 04-verifyB:2010s-04: 40 songs answered blind: 34 high, 6 medium, 0 low
+04-verifyB:2010s-05: medium ids 2010s-174 (soundtrack single early 2014) and 2010s-200 (single Feb 2015; unsigned 2014 online debut exists; answered 2015). Reconciler should decide.
+- [done 2026-11-26 20:31] 04-verifyB:2010s-05: 40 songs answered blind: 38 high, 2 medium, 0 low

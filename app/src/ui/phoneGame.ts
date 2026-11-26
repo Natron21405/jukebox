@@ -31,6 +31,7 @@ export function createPhoneGame(root: HTMLElement, deps: PhoneGameDeps): PhoneGa
   let my: MyState | null = null;
   let pub: PublicRoomState | null = null;
   let seq = 0;
+  let retryTimer: ReturnType<typeof setTimeout> | undefined;
   let lastKey = '';
   let drawn = '';
   let lastYear: number | null = null; // this player's last guess, so the next round starts where they left off
@@ -46,9 +47,17 @@ export function createPhoneGame(root: HTMLElement, deps: PhoneGameDeps): PhoneGa
   async function refresh() {
     const mine = ++seq;
     const next = await phone.state().catch(() => null);
-    if (stopped || mine !== seq || !next) return;
+    if (stopped || mine !== seq) return;
+    if (!next) { retryLater(); return; } // never stay on an old screen because one read failed
     my = next;
     draw();
+  }
+
+  /** A read failed: forget what we last drew so the same room state is handled again shortly. */
+  function retryLater() {
+    lastKey = '';
+    clearTimeout(retryTimer);
+    retryTimer = setTimeout(() => { if (!stopped && pub) onPublic(pub); }, CONFIG.net.retrySeconds * 1000);
   }
 
   function onPublic(s: PublicRoomState) {
@@ -281,6 +290,6 @@ export function createPhoneGame(root: HTMLElement, deps: PhoneGameDeps): PhoneGa
   return {
     onPublic,
     refresh,
-    stop() { stopped = true; clearTimers(); },
+    stop() { stopped = true; clearTimeout(retryTimer); clearTimers(); },
   };
 }

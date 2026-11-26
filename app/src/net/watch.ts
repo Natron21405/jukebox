@@ -1,3 +1,4 @@
+import { CONFIG } from '../logic';
 import type { Backend } from './backend';
 import type { Change, LockRow, PlayerRow, RoomRow, RoundRow, Unsubscribe } from './types';
 
@@ -53,16 +54,25 @@ export async function loadPublicState(backend: Backend, roomId: string): Promise
 /**
  * Subscribe first, then load, then replay anything that arrived during the load: no gap where a change is missed.
  * `onState` is called with the full state after every change. Returns a stop function.
+ *
+ * Safety net: realtime can silently drop events (sleeping phone, flaky wifi, a channel that reconnects without telling
+ * us). So the state is also re-read from the database every `resyncSeconds`, when the page comes back, and when the
+ * network returns. If the re-read differs from what we hold, `onState` gets the fresh state. A re-read that raced a
+ * live change is thrown away (the live change is newer).
  */
 export async function watchRoom(
   backend: Backend,
   roomId: string,
   onState: (s: PublicRoomState) => void,
+  opts: { resyncSeconds?: number } = {},
 ): Promise<Unsubscribe> {
   let state: PublicRoomState | null = null;
+  let version = 0;
+  let stopped = false;
   const queued: Change[] = [];
   const unsub = await backend.subscribe(roomId, (c) => {
     if (!state) { queued.push(c); return; }
+    version++;
     state = applyChange(state, c);
     onState(state);
   });
@@ -70,5 +80,30 @@ export async function watchRoom(
   if (!first) { await unsub(); throw new Error('room not found'); }
   state = queued.reduce(applyChange, first);
   onState(state);
-  return unsub;
+
+  let resyncing = false;
+  const resync = async () => {
+    if (stopped || resyncing) return;
+    resyncing = true;
+    const seen = version;
+    try {
+      const fresh = await loadPublicState(backend, roomId);
+      if (stopped || !fresh || seen !== version) return;
+      if (JSON.stringify(fresh) !== JSON.stringify(state)) { version++; state = fresh; onState(fresh); }
+    } catch { /* offline: the next tick tries again */ } finally { resyncing = false; }
+  };
+  const every = opts.resyncSeconds ?? CONFIG.net.resyncSeconds;
+  const timer = every > 0 ? setInterval(() => void resync(), every * 1000) : undefined;
+  const onVisible = () => { if (typeof document === 'undefined' || document.visibilityState === 'visible') void resync(); };
+  const onOnline = () => void resync();
+  if (typeof document !== 'undefined') document.addEventListener('visibilitychange', onVisible);
+  if (typeof window !== 'undefined') window.addEventListener('online', onOnline);
+
+  return async () => {
+    stopped = true;
+    clearInterval(timer);
+    if (typeof document !== 'undefined') document.removeEventListener('visibilitychange', onVisible);
+    if (typeof window !== 'undefined') window.removeEventListener('online', onOnline);
+    await unsub();
+  };
 }

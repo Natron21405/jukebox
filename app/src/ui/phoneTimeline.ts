@@ -21,6 +21,7 @@ export function createPhoneTimeline(root: HTMLElement, deps: PhoneGameDeps): Pho
   let my: MyState | null = null;
   let pub: PublicRoomState | null = null;
   let seq = 0;
+  let retryTimer: ReturnType<typeof setTimeout> | undefined;
   let lastKey = '';
   let drawn = '';
   let slotPicker: TimelinePicker | null = null;
@@ -37,9 +38,17 @@ export function createPhoneTimeline(root: HTMLElement, deps: PhoneGameDeps): Pho
   async function refresh() {
     const mine = ++seq;
     const next = await phone.state().catch(() => null);
-    if (stopped || mine !== seq || !next) return;
+    if (stopped || mine !== seq) return;
+    if (!next) { retryLater(); return; } // never stay on an old screen because one read failed
     my = next;
     draw();
+  }
+
+  /** A read failed: forget what we last drew so the same room state is handled again shortly. */
+  function retryLater() {
+    lastKey = '';
+    clearTimeout(retryTimer);
+    retryTimer = setTimeout(() => { if (!stopped && pub) onPublic(pub); }, CONFIG.net.retrySeconds * 1000);
   }
 
   function onPublic(s: PublicRoomState) {
@@ -278,5 +287,5 @@ export function createPhoneTimeline(root: HTMLElement, deps: PhoneGameDeps): Pho
     show(root, node);
   }
 
-  return { onPublic, refresh, stop() { stopped = true; clearTimers(); } };
+  return { onPublic, refresh, stop() { stopped = true; clearTimeout(retryTimer); clearTimers(); } };
 }

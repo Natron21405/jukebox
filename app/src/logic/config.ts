@@ -71,6 +71,12 @@ export const CONFIG = {
     heartbeatSeconds: 20,
     /** The host re-syncs the connected flags from presence this often, on top of every presence change. */
     presenceSyncSeconds: 15,
+    /** Every screen re-reads the room from the database this often, in case a realtime event was lost. */
+    resyncSeconds: 10,
+    /** A screen that failed to load its state tries again after this long. */
+    retrySeconds: 2,
+    /** A button press that has not finished after this long is given up, so the buttons never stay dead. */
+    actionTimeoutSeconds: 20,
   },
 
   matcher: {

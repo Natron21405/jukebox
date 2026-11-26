@@ -3,7 +3,7 @@ import {
   ClosestYearGame, gamePhase, suddenDeathContenders, winnerOf, type ClosestYearReveal, type NextRound,
 } from '../game';
 import type { HostSession, HostState, PlayerRow, PublicRoomState } from '../net';
-import { h, show } from './dom';
+import { h, show, withTimeout } from './dom';
 import { leaderboardList, type RoundMark } from './leaderboard';
 import { exhaustedPanel, removeSongControl } from './songTools';
 
@@ -62,6 +62,7 @@ export function createHostGame(root: HTMLElement, deps: HostGameDeps): HostGame 
   let stopped = false;
   let busy = false;
   let seq = 0;
+  let retryTimer: ReturnType<typeof setTimeout> | undefined;
   let lastKey = '';
   let notice = '';
   let exhausted: { resetWouldHelp: boolean } | null = null;
@@ -91,9 +92,17 @@ export function createHostGame(root: HTMLElement, deps: HostGameDeps): HostGame 
   async function reload() {
     const mine = ++seq;
     const next = await session.state().catch(() => null);
-    if (stopped || mine !== seq || !next) return;
+    if (stopped || mine !== seq) return;
+    if (!next) { retryLater(); return; } // never stay on an old screen because one read failed
     hs = next;
     draw();
+  }
+
+  /** A read failed: forget what we last drew so the same room state is handled again shortly. */
+  function retryLater() {
+    lastKey = '';
+    clearTimeout(retryTimer);
+    retryTimer = setTimeout(() => { if (!stopped && pub) onPublic(pub); }, CONFIG.net.retrySeconds * 1000);
   }
 
   function onPublic(s: PublicRoomState) {
@@ -102,13 +111,13 @@ export function createHostGame(root: HTMLElement, deps: HostGameDeps): HostGame 
     const key = `${s.room.status}|${s.room.game_no}|${s.round?.id ?? ''}|${s.round?.status ?? ''}|${s.locked.length}|${s.players.map((p) => `${p.score}${p.connected ? 1 : 0}`).join(',')}`;
     if (key === lastKey) return;
     lastKey = key;
-    void ensureGame().then(async () => { await reload(); startTick(); void autoEnd(); }).catch(() => { notice = 'The song list could not be loaded.'; draw(); });
+    void ensureGame().then(async () => { await reload(); startTick(); void autoEnd(); }).catch(() => { notice = 'The song list could not be loaded. Trying again…'; draw(); retryLater(); });
   }
 
   const guarded = async <T>(fn: () => Promise<T>): Promise<T | undefined> => {
     if (busy) return undefined;
     busy = true; notice = ''; exhausted = null;
-    try { return await fn(); } catch { notice = 'That did not work. Check the connection and try again.'; return undefined; } finally { busy = false; await reload(); }
+    try { return await withTimeout(fn(), CONFIG.net.actionTimeoutSeconds * 1000); } catch { notice = 'That did not work. Check the connection and try again.'; return undefined; } finally { busy = false; await reload(); }
   };
 
   // ------------------------------------------------------------------ timers
@@ -147,7 +156,7 @@ export function createHostGame(root: HTMLElement, deps: HostGameDeps): HostGame 
   const resetPlayed = () => guarded(async () => { await session.resetPlayed(); });
   const unblockSong = () => guarded(async () => { if (hs?.round) await session.unblockSong(hs.round.song_id); });
   const blockSong = () => guarded(async () => { if (hs?.round) await session.blockSong(hs.round.song_id); });
-  const again = () => guarded(async () => { ackOver = false; await (await ensureGame()).playAgain(); });
+  const again = () => guarded(async () => { await (await ensureGame()).playAgain(); ackOver = false; }); // only after it worked, so a failed try stays on the winner screen
 
   async function start() {
     const g = await ensureGame();
@@ -316,6 +325,6 @@ export function createHostGame(root: HTMLElement, deps: HostGameDeps): HostGame 
   return {
     onPublic,
     start,
-    stop() { stopped = true; stopTick(); player.stop(); },
+    stop() { stopped = true; clearTimeout(retryTimer); stopTick(); player.stop(); },
   };
 }

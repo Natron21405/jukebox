@@ -4,6 +4,7 @@ import { supabase } from './supabase';
 import { mountHost } from './ui/host';
 import { mountPhone } from './ui/phone';
 import { parseRoute } from './ui/route';
+import { watchForNewVersion } from './ui/staleApp';
 
 const root = document.getElementById('app')!;
 const backend = createSupabaseBackend(supabase);
@@ -23,3 +24,6 @@ async function route() {
 
 window.addEventListener('hashchange', () => { void route(); });
 void route();
+
+// A tab left open keeps old code; pick up a new deploy on its own.
+watchForNewVersion({ everySeconds: 120 });

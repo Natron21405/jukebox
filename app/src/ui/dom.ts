@@ -21,3 +21,10 @@ export function h<K extends keyof HTMLElementTagNameMap>(tag: K, props: Props = 
 export function show(root: HTMLElement, ...nodes: Node[]): void {
   root.replaceChildren(...nodes);
 }
+
+/** Give up on a request that never answers, so a stalled network cannot leave the buttons dead for good. */
+export function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
+  let t: ReturnType<typeof setTimeout>;
+  const limit = new Promise<never>((_, reject) => { t = setTimeout(() => reject(new Error('timed out')), ms); });
+  return Promise.race([p, limit]).finally(() => clearTimeout(t));
+}

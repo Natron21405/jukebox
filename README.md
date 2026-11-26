@@ -39,11 +39,12 @@ Repo layout: `app/` (web app, Vite + TypeScript), `supabase/migrations/` (SQL), 
 | Dev server (phones on the same Wi-Fi can use the printed network URL) | `cd app && npm run dev` (open `/jukebox/`) |
 | App tests | `cd app && npm test` |
 | Production build | `cd app && npm run build` (output in `app/dist`) |
+| Set the two GitHub repository variables from `.env` (once) | `node tools/set-pages-vars.mjs` |
 | Realtime + database smoke test | `node tools/smoke-realtime.mjs` |
 | Apple preview smoke test (about 70 s, counts only) | `node tools/smoke-itunes.mjs` |
 | Bot simulation against the real project (about 3 min, counts and timings only) | `node tools/simulate.mjs` (options: `--modes timeline`, `--bots 10`, `--rounds 8`, `--target 6`, `--seconds 15`) |
 
-Secrets live in the root `.env` (git-ignored). Only `SUPABASE_URL` and `SUPABASE_PUBLISHABLE_KEY` go to the browser (as `VITE_*` variables in `app/.env` or GitHub Actions secrets). `SUPABASE_DB_URL` is used locally only, to apply migrations.
+Secrets live in the root `.env` (git-ignored). Only `SUPABASE_URL` and `SUPABASE_PUBLISHABLE_KEY` go to the browser (as `VITE_*` variables in `app/.env` or GitHub repository variables `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY`; the key is publishable, not secret). `SUPABASE_DB_URL` is used locally only, to apply migrations.
 
 ## Song pool
 
@@ -66,6 +67,10 @@ Measured by `node tools/simulate.mjs` (12 bot phones + host, every WebSocket fra
 
 Reading: connections, joins and the monthly allowance have a lot of headroom. The one number above its nominal limit is the burst at each reveal. No bot was disconnected and no update was lost in 2 runs of 2 games, but if Supabase ever starts enforcing 100 per second on a free project, the cheapest fixes are (1) phones stop listening to the `players` table and read their own row through `get_my_state`, and (2) the host writes all players in one statement and the scoreboard is rebuilt from the reveal payload. Not done now, to keep the app small.
 
+## Live site and updating
+
+Live: https://natron21405.github.io/jukebox/ (host screen: `#/host`). Every push to `main` runs `.github/workflows/deploy.yml`: install, run the tests, build with the two `VITE_*` variables, publish `app/dist` to GitHub Pages (Settings > Pages > Source = GitHub Actions). To update the game: change code, run `cd app && npm test`, commit, `git push`, and watch with `gh run watch`. The first playtest checklist, taking the site down, rerunning the song pipeline and the Supabase pausing note are in `.build/PLAYTEST.md`. Database changes go in a new file in `supabase/migrations/` and are applied with `node tools/apply-migrations.mjs`.
+
 # Decisions
 
 Each architecture decision and the reason for it. Add to this list as phases make more.
@@ -73,7 +78,7 @@ Each architecture decision and the reason for it. Add to this list as phases mak
 - **Frontend stack: Vite + TypeScript, no UI framework (yet).** Builds to plain static files, loads fast on phones, tiny toolchain. A framework can be added later if the screens need it; the game logic stays framework-free.
 - **Hosting: GitHub Pages from a public repo named `jukebox`, base path `/jukebox/`.** Free Pages needs a public repo; Nathan accepts the song file being publicly readable. Deployed by a GitHub Actions workflow (`.github/workflows/deploy.yml`, finished in phase 13).
 - **Backend: Supabase (Postgres + Realtime), no custom server.** Chosen by Nathan. Browser gets only the publishable key; Row Level Security is applied to every table (phase 08+).
-- **Build-time config:** `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` in `app/.env` (git-ignored) locally, and as Actions secrets in CI.
+- **Build-time config:** `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` in `app/.env` (git-ignored) locally, and as GitHub repository variables in CI (the publishable key ships to every browser anyway, so a secret would add nothing).
 - **Tests: Vitest** for pure game logic, because it shares Vite's config and needs no extra setup.
 - **Tool scripts are plain Node ESM in `tools/`** with their own root `package.json` (`@supabase/supabase-js`, `pg`), so the web app's dependencies stay minimal.
 - **Audio: Apple iTunes Search API previews, streamed from Apple's URLs, never downloaded or re-hosted** (see plan/07-audio.md). Smoke test: 20 of 20 previews returned audio.
@@ -116,3 +121,4 @@ Each architecture decision and the reason for it. Add to this list as phases mak
 - **A used-up pool says why, and offers a reset only when it would help.** `chooseNextSong` reports `resetWouldHelp`. If earlier games used the songs, the host sees a friendly message with the confirmed reset. If the songs are all used in this game or blocked, no reset is offered and the message points to the Song settings screen. Pure text and counts are in `app/src/logic/songLibrary.ts`.
 - **Bot simulation runs the real net and game layers through vite-node, not a browser (`tools/simulate.mjs` + `tools/simulate-run.ts`).** It uses the same Supabase calls and the same host and phone controllers as the screens, against the real project with throwaway rooms that are deleted at the end (also on Ctrl-C). A killed "page" simulates a closed tab (no goodbye), and a graceful stop simulates moving to another device. The checks re-derive scores and placements from the answers the bots were told were saved, so they do not trust the app's own output. It prints counts and timings only; violations name round and bot numbers, never song fields.
 - **A goodbye is not undone by stale presence (migration `20261126220000_goodbye_stays_away.sql`).** The simulation found that a phone saying goodbye was marked connected again within a second by the host's presence mirror, so a player moving to a new device got "name taken" for up to about 25 s. Now `seat_ping(false)` back-dates `last_seen`, and `host_set_connected` only marks a seat connected from presence if it was heard from in the last 10 minutes. A returning phone always sends a heartbeat or rejoins first, so real reconnects are unaffected.
+- **Deploy: GitHub Actions to Pages, config in repository variables, tests gate the build.** The workflow runs `npm test` before `npm run build`, so a failing test stops a deploy. The Supabase URL and publishable key are repository *variables* (set by `tools/set-pages-vars.mjs`, never the database URL), because they end up in the public JavaScript anyway. `songs.json` is committed and served as a static file next to the app, as accepted earlier for a public repo; the song details stay out of every log and note.

@@ -18,6 +18,9 @@ export const CONFIG = {
 
   closestYear: {
     rounds: 15,
+    /** Year guesses outside this range are ignored (treated as no answer). The upper bound is generous on purpose. */
+    guessYearMin: 1900,
+    guessYearMax: 2100,
     /** Checked in order: first row whose maxDistance >= distance wins. Beyond the last row: 0 points. */
     pointsTable: [
       { maxDistance: 0, points: 5 },

@@ -211,3 +211,5 @@ Correction: 04-verifyA:1980s-11 actual counts are 37 high, 3 medium, 0 low (40 a
 - [done 2026-11-26 20:32] 04-verifyB:2010s-09: 25 songs answered blind: 17 high, 7 medium, 1 low
 - [done 2026-11-26 20:32] 04-verifyB:2020s-03: 1 song answered blind: 1 high, 0 medium, 0 low
 - [done 2026-11-26 20:33] 04-verifyB:2020s-01: 40 songs answered blind: 40 high, 0 medium, 0 low
+04-verifyB:2020s-02: medium ids 2020s-055, 072, 075 hinge on single/album release dates. Reconciler should decide.
+- [done 2026-11-26 20:33] 04-verifyB:2020s-02: 40 songs answered blind: 37 high, 3 medium, 0 low

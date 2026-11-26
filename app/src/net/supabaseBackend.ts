@@ -102,6 +102,7 @@ export function createSupabaseBackend(sb: SupabaseClient): Backend {
     hostSetOverride: (room, token, round, player, value) =>
       rpc('host_set_override', { p_room: room, p_token: token, p_round: round, p_player: player, p_value: value }),
     async hostSetConnected(room, token, ids) { await rpc('host_set_connected', { p_room: room, p_token: token, p_connected_ids: ids }); },
+    async hostKickPlayer(room, token, player) { await rpc('host_kick_player', { p_room: room, p_token: token, p_player: player }); },
     async hostBlockSong(room, token, songId) { await rpc('host_block_song', { p_room: room, p_token: token, p_song_id: songId }); },
     async hostUnblockSong(room, token, songId) { await rpc('host_unblock_song', { p_room: room, p_token: token, p_song_id: songId }); },
     hostResetPlayed: (room, token) => rpc('host_reset_played', { p_room: room, p_token: token }),

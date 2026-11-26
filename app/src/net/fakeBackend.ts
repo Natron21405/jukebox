@@ -303,6 +303,15 @@ export function createFakeBackend(start = Date.UTC(2026, 0, 1)): FakeBackend {
         else if (!here && p.connected && clock - (seats.get(p.id)?.lastSeen ?? 0) > PRESENCE_GRACE_MS) setPlayer(p, { connected: false });
       }
     },
+    async hostKickPlayer(roomId, token, playerId) {
+      host(roomId, token);
+      const p = players.get(playerId);
+      if (!p || p.room_id !== roomId) return;
+      players.delete(playerId); seats.delete(playerId);
+      for (let i = locks.length - 1; i >= 0; i--) if (locks[i].player_id === playerId) locks.splice(i, 1);
+      for (let i = answers.length - 1; i >= 0; i--) if (answers[i].player_id === playerId) answers.splice(i, 1);
+      emit(roomId, { table: 'players', event: 'DELETE', row: clone(p) });
+    },
     async hostBlockSong(roomId, token, songId) {
       host(roomId, token);
       if (!blocked.some((b) => b.songId === songId)) blocked.push({ songId, roomId });

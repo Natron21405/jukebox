@@ -231,6 +231,17 @@ export function backendContract(label: string, make: () => Backend, opts: { afte
       expect(kv.getItem('jukebox.host')).toBeNull();
     });
 
+    it('lets the host kick a player: the seat is gone and the name is free again', async () => {
+      const { creds, host } = await newRoom();
+      const a = await phone(creds.code, 'Kick Me');
+      if (!a.r.ok) throw new Error('join failed');
+      await host.kickPlayer(a.r.seat.playerId);
+      expect((await host.state()).players).toHaveLength(0);
+      expect(await backend.getMyState(a.r.seat.seatToken)).toBeNull();
+      expect((await resumeSeat(backend, a.kv))).toBeNull();
+      expect((await phone(creds.code, 'Kick Me')).r.ok).toBe(true);
+    });
+
     it('resetting played songs keeps the current game songs', async () => {
       const { host } = await newRoom();
       await host.startRound(SONG_A);

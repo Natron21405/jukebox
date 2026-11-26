@@ -7,3 +7,4 @@ export * from './scoring';
 export * from './endgame';
 export * from './selection';
 export * from './names';
+export * from './lobby';

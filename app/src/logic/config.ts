@@ -29,6 +29,19 @@ export const CONFIG = {
 
   artistBonus: 2,
 
+  /** Host lobby: what the host may choose, and when the Start button turns on. */
+  lobby: {
+    minPlayersToStart: 2,
+    roomCodeLength: 4,
+    /** Timeline: first to this many cards wins. */
+    targetCards: { min: 4, max: 20, step: 1 },
+    /** Closest Year: number of rounds. */
+    rounds: { min: 5, max: 30, step: 1 },
+    /** Seconds to answer each song. */
+    roundSeconds: { min: 15, max: 90, step: 5 },
+  },
+
+
   net: {
     /** Phones ping this often so the database knows the seat is alive (seat is "live" for 60 s after a ping). */
     heartbeatSeconds: 20,

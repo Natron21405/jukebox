@@ -42,6 +42,7 @@ export interface Backend {
   hostUpdatePlayers(roomId: string, token: string, players: PlayerResult[]): Promise<void>;
   hostSetOverride(roomId: string, token: string, roundId: string, playerId: string, value: boolean | null): Promise<boolean>;
   hostSetConnected(roomId: string, token: string, connectedIds: string[]): Promise<void>;
+  hostKickPlayer(roomId: string, token: string, playerId: string): Promise<void>;
   hostBlockSong(roomId: string, token: string, songId: string): Promise<void>;
   hostUnblockSong(roomId: string, token: string, songId: string): Promise<void>;
   hostResetPlayed(roomId: string, token: string): Promise<number>;

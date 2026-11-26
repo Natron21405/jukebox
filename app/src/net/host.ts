@@ -51,6 +51,8 @@ export class HostSession {
   setArtistOverride(roundId: string, playerId: string, value: boolean | null) {
     return this.backend.hostSetOverride(...this.a, roundId, playerId, value);
   }
+  /** Remove a player (lobby kick). Their phone drops back to the join screen. */
+  kickPlayer(playerId: string) { return this.backend.hostKickPlayer(...this.a, playerId); }
   blockSong(songId: string) { return this.backend.hostBlockSong(...this.a, songId); }
   unblockSong(songId: string) { return this.backend.hostUnblockSong(...this.a, songId); }
   resetPlayed() { return this.backend.hostResetPlayed(...this.a); }

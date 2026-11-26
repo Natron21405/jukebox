@@ -126,3 +126,5 @@ Correction: 04-verifyA:1980s-11 actual counts are 37 high, 3 medium, 0 low (40 a
 - [done 2026-11-26 20:19] 04-verifyB:1970s-09: 40 songs answered blind: 37 high, 3 medium, 0 low
 - [done 2026-11-26 20:19] 04-verifyB:1970s-10: 40 songs answered blind: 38 high, 2 medium, 0 low
 - [done 2026-11-26 20:20] 04-verifyB:1980s-01: 40 songs answered blind: 37 high, 3 medium, 0 low
+04-verifyB:1980s-02: ids 1980s-060 and 1980s-065 are medium: an earlier separate-version release exists (indie/Stiff 1980 version) but the well-known recording is 1981; I answered 1981. Reconciler should decide.
+- [done 2026-11-26 20:20] 04-verifyB:1980s-02: 40 songs answered blind: 38 high, 2 medium, 0 low

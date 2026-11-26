@@ -180,3 +180,5 @@ Correction: 04-verifyA:1980s-11 actual counts are 37 high, 3 medium, 0 low (40 a
 - [done 2026-11-26 20:27] 04-verifyB:2000s-04: 40 songs answered blind: 23 high, 15 medium, 2 low
 04-verifyB:2000s-05: medium ids 2000s-163, 164, 165, 167, 171, 188, 191 are album-before-single (used earlier album year); 169, 170, 173 are re-recordings (answered the well-known recording; an earlier EP version exists); 176, 189, 195, 197, 200 hinge on single release dates (Dec/Jan or Nov/Dec). Reconciler should decide.
 - [done 2026-11-26 20:28] 04-verifyB:2000s-05: 40 songs answered blind: 25 high, 15 medium, 0 low
+04-verifyB:2000s-06: medium ids 2000s-205, 206, 222, 224, 230, 231 are album-before-single (used earlier album year); 201 answered for the Low single (title/pairing differs); 211 is a 2002 remix single of an earlier album track; 213 same recording was on a 2000 self-released demo CD (answered 2003 commercial release); 216 clean single 2004 vs album title 2003. Reconciler should decide.
+- [done 2026-11-26 20:28] 04-verifyB:2000s-06: 40 songs answered blind: 30 high, 10 medium, 0 low

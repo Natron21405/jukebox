@@ -142,3 +142,5 @@ Correction: 04-verifyA:1980s-11 actual counts are 37 high, 3 medium, 0 low (40 a
 - [done 2026-11-26 20:21] 04-verifyB:1980s-09: 40 songs answered blind: 38 high, 2 medium, 0 low
 04-verifyB:1980s-11: medium ids 1980s-403, 414, 421, 425, 437: album released before the single (single in following year); I used the earlier album year. Reconciler should decide.
 - [done 2026-11-26 20:22] 04-verifyB:1980s-11: 40 songs answered blind: 35 high, 5 medium, 0 low
+04-verifyB:1980s-10: medium ids 1980s-364 (studio cover first released 1981; famous live version 1987), 372, 375, 385, 394, 396 (album track 1988/87 before later single), 374, 384, 397, 399 hinge on album-vs-single dates; used earliest public release. Reconciler should decide.
+- [done 2026-11-26 20:22] 04-verifyB:1980s-10: 40 songs answered blind: 30 high, 10 medium, 0 low

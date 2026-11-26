@@ -32,3 +32,5 @@ Keep this file short. Newest information wins.
 - [done 2026-11-26 19:41] 03-curate-2000s: 403 songs curated for 2000s (350 base, 53 extra), checker passes
 03-curate-2010s: data/work/candidates/2010s.json (345 = 300 base + 45 extra), parts 2010s-1..4.json built from data/work/src-2010s-*.txt via data/work/build-2010s.mjs (dedupes, drops out-of-range years, applies artist cap across decades); checker passes. Band names without 'The' carry groupArtists.
 - [done 2026-11-26 19:50] 03-curate-2010s: 345 songs curated for 2010s (300 base, 45 extra), checker passes
+03-curate-2020s: data/work/candidates/2020s.json (81 = 70 base + 11 extra), part 2020s-1.json built from data/work/src-2020s-a.txt via data/work/build-2020s.mjs (dedupes, drops out-of-range years, applies artist cap across decades); checker passes. Band names without 'The' carry groupArtists.
+- [done 2026-11-26 19:53] 03-curate-2020s: 81 songs curated for 2020s (70 base, 11 extra), checker passes

@@ -91,3 +91,5 @@ Correction: 04-verifyA:1980s-11 actual counts are 37 high, 3 medium, 0 low (40 a
 04-verifyA:2000s-08: id 2000s-291 (title/artist pairing) could not be found as a real recording; answered low as a guess. Curator/reconciler should check the pairing.
 - [done 2026-11-26 20:08] 04-verifyA:2000s-08: 40 songs answered blind: 28 high, 11 medium, 1 low
 - [done 2026-11-26 20:08] 04-verifyA:2000s-11: 3 songs answered blind: 3 high, 0 medium, 0 low
+04-verifyA:2000s-10: id 2000s-371 has a title that matches an album, not a song (answered low with the album year); curator/reconciler should check.
+- [done 2026-11-26 20:08] 04-verifyA:2000s-10: 40 songs answered blind: 26 high, 13 medium, 1 low

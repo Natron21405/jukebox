@@ -186,3 +186,4 @@ Correction: 04-verifyA:1980s-11 actual counts are 37 high, 3 medium, 0 low (40 a
 - [done 2026-11-26 20:28] 04-verifyB:2000s-07: 40 songs answered blind: 28 high, 12 medium, 0 low
 04-verifyB:2000s-09: id 2000s-357 title/artist pairing could not be found as a real recording (answered low, guess); curator/reconciler should check. Medium ids 2000s-327 (indie 2000 release vs 2001 single), 331, 332, 334, 339, 340, 342, 345, 347, 351, 359, 360 are album-before-single (used earlier album year). Reconciler should decide.
 - [done 2026-11-26 20:29] 04-verifyB:2000s-09: 40 songs answered blind: 27 high, 12 medium, 1 low
+- [done 2026-11-26 20:29] 04-verifyB:2000s-11: 3 songs answered blind: 3 high, 0 medium, 0 low

@@ -162,3 +162,5 @@ Correction: 04-verifyA:1980s-11 actual counts are 37 high, 3 medium, 0 low (40 a
 - [done 2026-11-26 20:24] 04-verifyB:1990s-08: 40 songs answered blind: 28 high, 12 medium, 0 low
 04-verifyB:1990s-09: medium ids 1990s-326, 341, 350, 351, 353 are album-before-single (used earlier album year); 1990s-328 (album Nov 1997 vs single Nov 1997/Jan 1998; answered 1997); 1990s-359 (NL single May 1998, worldwide Nov 1998; answered 1998). Reconciler should decide.
 - [done 2026-11-26 20:25] 04-verifyB:1990s-09: 40 songs answered blind: 33 high, 7 medium, 0 low
+04-verifyB:1990s-07: medium ids 1990s-243 (indie 1994 version exists; answered 1996 major-label recording), 248, 260 (album before later single, used album year), 250, 253. Reconciler should decide.
+- [done 2026-11-26 20:25] 04-verifyB:1990s-07: 40 songs answered blind: 35 high, 5 medium, 0 low

@@ -156,3 +156,5 @@ Correction: 04-verifyA:1980s-11 actual counts are 37 high, 3 medium, 0 low (40 a
 - [done 2026-11-26 20:23] 04-verifyB:1990s-05: 40 songs answered blind: 32 high, 8 medium, 0 low
 04-verifyB:1990s-06: medium ids 1990s-201 (re-recording; answered well-known version), 206, 219, 221, 224, 227, 228, 232 (album before later single; used album year), 209 (1992 acoustic demo only; answered 1994 single), 236 (TV theme 1994, commercial 1995; answered 1995). Reconciler should decide.
 - [done 2026-11-26 20:24] 04-verifyB:1990s-06: 40 songs answered blind: 30 high, 10 medium, 0 low
+04-verifyB:1990s-04: medium ids 1990s-122 (album before later single), 127 (US single Oct 1993, UK 1994), 131 and 132 (album Oct 1992, singles 1993; used album year). Reconciler should decide.
+- [done 2026-11-26 20:24] 04-verifyB:1990s-04: 40 songs answered blind: 36 high, 4 medium, 0 low

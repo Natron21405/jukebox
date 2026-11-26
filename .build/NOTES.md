@@ -60,3 +60,4 @@ Keep this file short. Newest information wins.
 - [done 2026-11-26 20:00] 04-verifyA:1980s-06: 40 songs answered blind: 38 high, 2 medium, 0 low
 - [done 2026-11-26 20:01] 04-verifyA:1980s-07: 40 songs answered blind: 39 high, 1 medium, 0 low
 - [done 2026-11-26 20:01] 04-verifyA:1980s-08: 40 songs answered blind: 39 high, 1 medium, 0 low
+- [done 2026-11-26 20:01] 04-verifyA:1980s-09: 40 songs answered blind: 37 high, 3 medium, 0 low

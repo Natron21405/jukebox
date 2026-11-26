@@ -40,3 +40,4 @@ Keep this file short. Newest information wins.
 - [done 2026-11-26 19:54] 04-verifyA:1960s-02: 40 songs answered blind: 40 high, 0 medium, 0 low
 - [done 2026-11-26 19:54] 04-verifyA:1960s-05: 1 song answered blind: 1 high, 0 medium, 0 low
 - [done 2026-11-26 19:54] 04-verifyA:1960s-03: 40 songs answered blind: 39 high, 1 medium, 0 low
+- [done 2026-11-26 19:54] 04-verifyA:1960s-04: 40 songs answered blind: 38 high, 1 medium, 1 low

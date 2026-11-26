@@ -189,3 +189,5 @@ Correction: 04-verifyA:1980s-11 actual counts are 37 high, 3 medium, 0 low (40 a
 - [done 2026-11-26 20:29] 04-verifyB:2000s-11: 3 songs answered blind: 3 high, 0 medium, 0 low
 04-verifyB:2000s-10: medium ids 2000s-362, 364, 366, 372, 373, 374, 391, 396, 399 are album-before-single (used earlier album year); 363 self-released album 2007 before label release 2008; 368 album reissue 2004 (earlier 2003 indie release may exist). 2000s-371 low: title is an album name, not a song. 2000s-397 first released 2012 (outside the 2000s), so curator/reconciler should drop or re-bucket it. Reconciler should decide.
 - [done 2026-11-26 20:29] 04-verifyB:2000s-10: 40 songs answered blind: 28 high, 11 medium, 1 low
+04-verifyB:2000s-08: id 2000s-291 (title/artist pairing) could not be found as a real recording; answered low as a guess. Medium ids 2000s-281, 285, 287, 294, 295, 297, 302, 305, 309, 315 are album-before-single (used earlier album/soundtrack year); 311 studio single 2008 (a 2005 demo EP exists). Reconciler should decide.
+- [done 2026-11-26 20:29] 04-verifyB:2000s-08: 40 songs answered blind: 28 high, 11 medium, 1 low

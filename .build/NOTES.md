@@ -207,3 +207,5 @@ Correction: 04-verifyA:1980s-11 actual counts are 37 high, 3 medium, 0 low (40 a
 - [done 2026-11-26 20:32] 04-verifyB:2010s-07: 40 songs answered blind: 34 high, 6 medium, 0 low
 04-verifyB:2010s-08: medium ids 2010s-294, 303, 305, 314 are album-before-single (used earlier album year); 297 solo version Dec 2018 vs featured-artist remix 2019 (answered 2018); 310 single Aug 2012. Reconciler should decide.
 - [done 2026-11-26 20:32] 04-verifyB:2010s-08: 40 songs answered blind: 34 high, 6 medium, 0 low
+04-verifyB:2010s-09: id 2010s-335 title/artist pairing could not be found as a real recording (answered low, guess); curator/reconciler should check. Medium ids 2010s-331 (original 2012 release vs 2014 remix hit), 332 (album before single), 333 (indie single Mar 2013, re-release Dec 2013), 337, 338, 340, 343 hinge on album/single/early-release dates. Reconciler should decide.
+- [done 2026-11-26 20:32] 04-verifyB:2010s-09: 25 songs answered blind: 17 high, 7 medium, 1 low

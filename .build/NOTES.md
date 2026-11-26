@@ -20,3 +20,5 @@ Keep this file short. Newest information wins.
 - [done 2026-11-26 19:10] 02-logic: Pure logic modules (config, matcher, timeline, scoring, endgame, selection, names) with 90 new tests, all passing
 03-curate-1950s: data/work/candidates/1950s.json (46 = 40 base + 6 extra), parts in candidates/parts/1950s-1.json; checker passes.
 - [done 2026-11-26 19:11] 03-curate-1950s: 46 songs curated for 1950s (40 base, 6 extra), checker passes
+03-curate-1960s: data/work/candidates/1960s.json (161 = 140 base + 21 extra), parts 1960s-1/2.json; checker passes, max 6 per artist across 1950s+1960s. Band names without 'The' carry an extra groupArtists field.
+- [done 2026-11-26 19:16] 03-curate-1960s: 161 songs curated for 1960s (140 base, 21 extra), checker passes

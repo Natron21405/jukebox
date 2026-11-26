@@ -9,6 +9,7 @@ import type { GameSong } from '../logic';
 import { h, show } from './dom';
 import { createHostGame, htmlClipPlayer, type ClipPlayer, type HostGame } from './hostGame';
 import { createHostTimeline } from './hostTimeline';
+import { openSongsScreen } from './hostSongs';
 import { qrElement } from './qr';
 import { joinAddressText, joinUrl } from './route';
 
@@ -52,6 +53,7 @@ export async function mountHost(root: HTMLElement, deps: HostDeps): Promise<Host
   let kickArmed: string | null = null;
   let kickTimer: ReturnType<typeof setTimeout> | undefined;
   let stopped = false;
+  let songs: { close(): void } | null = null; // the Songs screen, while it is open
   // One controller per mode; each draws only while the room is in its own mode and not in the lobby.
   let games: Record<GameMode, HostGame> | null = null;
   const inGame = (s: PublicRoomState) => s.room.status !== 'lobby';
@@ -171,8 +173,18 @@ export async function mountHost(root: HTMLElement, deps: HostDeps): Promise<Host
           onclick: () => void act(() => games![mode].start()),
         }, 'Start game'),
         !check.ok && h('p', { class: 'hint' }, check.reason),
+        h('button', { class: 'btn ghost', 'data-action': 'open-songs', onclick: openSongs }, 'Song settings'),
       ),
     );
+  }
+
+  function openSongs() {
+    if (!session) return;
+    songs?.close();
+    songs = openSongsScreen(root, {
+      session, loadPool: deps.loadPool ?? defaultLoadPool,
+      onBack: () => { songs?.close(); songs = null; render(); },
+    });
   }
 
   function render() {
@@ -180,6 +192,8 @@ export async function mountHost(root: HTMLElement, deps: HostDeps): Promise<Host
     if (!state) return;
     games?.closest_year.onPublic(state); // each also resets itself when the room goes back to the lobby
     games?.timeline.onPublic(state);
+    if (songs && !inGame(state)) return; // the Songs screen draws itself
+    if (songs) { songs.close(); songs = null; }
     if (!inGame(state)) show(root, lobbyView(state)); // in a game, the game's own screens draw themselves
   }
 
@@ -233,6 +247,7 @@ export async function mountHost(root: HTMLElement, deps: HostDeps): Promise<Host
   return {
     async stop() {
       stopped = true;
+      songs?.close();
       games?.closest_year.stop(); games?.timeline.stop();
       clearTimeout(kickTimer);
       document.removeEventListener('visibilitychange', onVisible);

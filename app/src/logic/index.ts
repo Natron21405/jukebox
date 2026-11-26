@@ -12,3 +12,4 @@ export * from './closestYearRound';
 export * from './yearPicker';
 export * from './timelineRound';
 export * from './slotPicker';
+export * from './songLibrary';

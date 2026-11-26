@@ -4,6 +4,7 @@ import {
 } from '../game';
 import type { HostSession, HostState, PlayerRow, PublicRoomState } from '../net';
 import { h, show } from './dom';
+import { exhaustedPanel, removeSongControl } from './songTools';
 
 /** The bit of an audio element the host needs, so tests can swap in a fake. Clips are streamed, never saved. */
 export interface ClipPlayer {
@@ -62,6 +63,7 @@ export function createHostGame(root: HTMLElement, deps: HostGameDeps): HostGame 
   let seq = 0;
   let lastKey = '';
   let notice = '';
+  let exhausted: { resetWouldHelp: boolean } | null = null;
   let playingRound = '';
   let needTap = false;
   let clipFailed = false;
@@ -104,7 +106,7 @@ export function createHostGame(root: HTMLElement, deps: HostGameDeps): HostGame 
 
   const guarded = async <T>(fn: () => Promise<T>): Promise<T | undefined> => {
     if (busy) return undefined;
-    busy = true; notice = '';
+    busy = true; notice = ''; exhausted = null;
     try { return await fn(); } catch { notice = 'That did not work. Check the connection and try again.'; return undefined; } finally { busy = false; await reload(); }
   };
 
@@ -136,11 +138,13 @@ export function createHostGame(root: HTMLElement, deps: HostGameDeps): HostGame 
   const next = () => guarded(async () => {
     const g = await ensureGame();
     const r: NextRound = await g.nextRound();
-    if (r.status === 'exhausted') notice = r.resetWouldHelp ? 'Out of fresh songs. Everything left was played in an earlier game.' : 'Out of songs to play.';
+    if (r.status === 'exhausted') exhausted = { resetWouldHelp: r.resetWouldHelp };
   });
   const skip = () => guarded(async () => { await game?.skipRound(); });
   const endNow = () => guarded(async () => { await game?.endRound(); });
   const override = (playerId: string, v: boolean | null) => guarded(async () => { await game?.setArtistOverride(playerId, v); });
+  const resetPlayed = () => guarded(async () => { await session.resetPlayed(); });
+  const unblockSong = () => guarded(async () => { if (hs?.round) await session.unblockSong(hs.round.song_id); });
   const blockSong = () => guarded(async () => { if (hs?.round) await session.blockSong(hs.round.song_id); });
   const again = () => guarded(async () => { ackOver = false; await (await ensureGame()).playAgain(); });
 
@@ -185,6 +189,7 @@ export function createHostGame(root: HTMLElement, deps: HostGameDeps): HostGame 
     h('main', { class: 'screen host game', 'data-stage': stage },
       h('header', { class: 'game-head' }, h('span', { class: 'round-label', 'data-round-label': '' }, roundLabel(s)), deps.joinStrip()),
       ...kids,
+      exhausted && exhaustedPanel(exhausted.resetWouldHelp, () => void resetPlayed()),
       notice && h('p', { class: 'notice', role: 'alert' }, notice));
 
   function betweenScreen(s: HostState) {
@@ -266,7 +271,7 @@ export function createHostGame(root: HTMLElement, deps: HostGameDeps): HostGame 
       h('div', { class: 'row-actions' },
         h('button', { class: 'btn primary huge', 'data-action': 'next', disabled: busy ? true : null,
           onclick: () => { if (o.status === 'winner') { ackOver = true; draw(); } else void next(); } }, label),
-        h('button', { class: 'btn ghost', 'data-action': 'block', onclick: () => void blockSong() }, 'Never play this song again')));
+        removeSongControl(!!hs?.round && s.blocked.includes(hs.round.song_id), () => void blockSong(), () => void unblockSong())));
   }
 
   function overScreen(s: HostState) {

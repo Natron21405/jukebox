@@ -186,3 +186,15 @@ h1, h2, p { margin: 0; }
 .sb-bar { flex: 1 1 6em; height: 12px; background: var(--panel); border-radius: 6px; overflow: hidden; }
 .sb-fill { display: block; height: 100%; background: var(--accent); transition: width 0.4s; }
 .sb-hits { color: var(--muted); font-weight: 800; min-width: 2.5em; }
+
+/* Song settings, restore list, confirm step, exhausted notice (phase 11) */
+.confirm-box { display: flex; flex-direction: column; gap: 10px; align-items: flex-start; }
+.confirm-box .row-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+.removed { display: inline-flex; gap: 12px; align-items: center; color: var(--muted); }
+.notice.exhausted { background: rgba(255, 209, 102, 0.12); border-color: var(--accent); display: flex; flex-direction: column; gap: 10px; }
+.songs { display: flex; flex-direction: column; gap: 16px; }
+.songs-panel, .blocked-panel { background: var(--panel); border-radius: var(--radius); padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+.blocked-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.blocked-row { display: flex; gap: 12px; align-items: center; justify-content: space-between; background: var(--panel-2); border-radius: var(--radius); padding: 8px 12px; }
+.blocked-title { font-weight: 700; display: block; }
+.blocked-artist { color: var(--muted); display: block; }

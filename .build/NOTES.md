@@ -170,3 +170,5 @@ Correction: 04-verifyA:1980s-11 actual counts are 37 high, 3 medium, 0 low (40 a
 - [done 2026-11-26 20:26] 04-verifyB:1990s-12: 20 songs answered blind: 18 high, 2 medium, 0 low
 04-verifyB:1990s-11: id 1990s-406 first released as a single in Dec 2000 (outside the 1990s; answered 2000, high) so curator/reconciler should drop or re-bucket it. Medium ids 403, 410, 411, 412, 415, 418, 421, 424, 426 are album-before-single (used album year); 414 (single Oct 1992, sources conflict), 425, 433 hinge on release dates. Reconciler should decide.
 - [done 2026-11-26 20:26] 04-verifyB:1990s-11: 40 songs answered blind: 28 high, 12 medium, 0 low
+04-verifyB:2000s-01: medium ids 2000s-002, 008, 013, 014, 018, 020, 025, 032, 036, 038, 039 are album-before-single (used earlier album year). Reconciler should decide.
+- [done 2026-11-26 20:26] 04-verifyB:2000s-01: 40 songs answered blind: 29 high, 11 medium, 0 low

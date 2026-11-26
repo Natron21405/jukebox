@@ -1,4 +1,4 @@
-import { CONFIG, yearRangeOf, type RevealRow } from '../logic';
+import { CONFIG, ordinal, rankOf, yearRangeOf, type RevealRow } from '../logic';
 import { phoneView, sendAnswer, winnerOf, type PhoneView } from '../game';
 import type { MyState, PhoneSession, PlayerRow, PublicRoomState, StoredSeat } from '../net';
 import { h, show } from './dom';
@@ -206,8 +206,16 @@ export function createPhoneGame(root: HTMLElement, deps: PhoneGameDeps): PhoneGa
           ? h('p', { class: 'points' }, 'Sudden death: no points')
           : h('p', { class: 'points', 'data-points': String(row?.total ?? 0) }, `+${plural(row?.total ?? 0, 'point')}`),
         h('p', { class: 'hint' }, `Total: ${plural(view.score, 'point')}`),
+        ownRank(state),
         view.over && finalLine(view, state)),
     );
+  }
+
+  /** The player's own place, ties sharing, e.g. "You are 3rd of 12". */
+  function ownRank(state: MyState) {
+    const players: PlayerRow[] = pub?.players ?? [state.player];
+    const rank = rankOf('closestYear', players.map((p) => ({ id: p.id, name: p.name, total: p.score })), state.player.id);
+    return rank === null ? null : h('p', { class: 'own-rank', 'data-own-rank': String(rank) }, `You are ${ordinal(rank)} of ${players.length}`);
   }
 
   function finalLine(view: PhoneView, state: MyState) {

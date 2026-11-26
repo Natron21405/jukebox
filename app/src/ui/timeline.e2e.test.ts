@@ -128,17 +128,18 @@ describe('Timeline, end to end (host + 3 phones, fake network and fake audio)', 
       await until(() => q(hostRoot, '[data-stage=reveal]') !== null, `round ${roundNo} host reveal`);
       expect(Number(q(hostRoot, '[data-answer-year]')!.getAttribute('data-answer-year'))).toBe(song.year);
       expect(hostRoot.textContent).toContain(song.title);
-      const rows = hostRoot.querySelectorAll('.reveal-row');
-      expect(rows.length).toBe(3);
+      expect(hostRoot.querySelectorAll('.lb-row').length).toBe(3);
+      expect(q(hostRoot, '.scoreboard')).toBeNull();
       for (let i = 0; i < 3; i++) {
-        const row = q(hostRoot, `.reveal-row[data-player=${names[i]}]`)!;
+        const row = q(hostRoot, `.lb-row[data-player=${names[i]}]`)!;
         const right = names[i] !== miss;
-        expect(row.getAttribute('data-correct')).toBe(String(right));
-        expect(row.getAttribute('data-cards')).toBe(String(expectedCards[i] + (right ? 1 : 0)));
+        expect(q(row, '[data-mark=placement]')!.getAttribute('data-ok')).toBe(String(right));
+        expect(row.getAttribute('data-total')).toBe(String(expectedCards[i] + (right ? 1 : 0)));
       }
       expect(q(hostRoot, '[data-placed-count]')!.getAttribute('data-placed-count')).toBe(String(miss ? 2 : 3));
+      expect(q(hostRoot, '.lb-row[data-player=Ana] [data-mark=artist]')!.getAttribute('data-ok')).toBe('true');
       expect(q(hostRoot, '.reveal-row[data-player=Ana] [data-artist-hit]')!.getAttribute('data-artist-hit')).toBe('true');
-      expect(q(hostRoot, '.reveal-row[data-player=Ben] [data-artist-hit]')!.getAttribute('data-artist-hit')).toBe('false');
+      expect(q(hostRoot, '.lb-row[data-player=Ben] [data-mark=artist]')!.getAttribute('data-ok')).toBe('false');
 
       // Phones: result feedback, the right year, and the new card highlighted for those who placed it.
       await until(() => phones.every((p) => q(p, '[data-stage=result]') !== null), `round ${roundNo} phone results`);
@@ -155,7 +156,7 @@ describe('Timeline, end to end (host + 3 phones, fake network and fake audio)', 
 
     // Round 1: Cy misses and gains no card. Round 2: everyone places it, so Ana and Ben both reach 4 cards.
     await playRound(1, 'Cy');
-    expect(q(hostRoot, '.tl-board [data-player=Cy]')!.getAttribute('data-cards')).toBe('2');
+    expect(q(hostRoot, '.lb-row[data-player=Cy]')!.getAttribute('data-total')).toBe('2');
     expect(q(hostRoot, '[data-action=next]')!.textContent).toBe('Next song');
     await playRound(2, null);
 

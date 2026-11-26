@@ -13,3 +13,4 @@ export * from './yearPicker';
 export * from './timelineRound';
 export * from './slotPicker';
 export * from './songLibrary';
+export * from './leaderboard';

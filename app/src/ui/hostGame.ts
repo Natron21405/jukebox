@@ -1,9 +1,10 @@
-import { CONFIG, normalizeSettings, type GameSong, type RevealRow } from '../logic';
+import { CONFIG, normalizeSettings, topBoard, type GameSong, type RevealRow } from '../logic';
 import {
   ClosestYearGame, gamePhase, suddenDeathContenders, winnerOf, type ClosestYearReveal, type NextRound,
 } from '../game';
 import type { HostSession, HostState, PlayerRow, PublicRoomState } from '../net';
 import { h, show } from './dom';
+import { leaderboardList, type RoundMark } from './leaderboard';
 import { exhaustedPanel, removeSongControl } from './songTools';
 
 /** The bit of an audio element the host needs, so tests can swap in a fake. Clips are streamed, never saved. */
@@ -230,30 +231,31 @@ export function createHostGame(root: HTMLElement, deps: HostGameDeps): HostGame 
       h('button', { class: 'btn primary', 'data-action': 'end-now', onclick: () => void endNow() }, 'Show the answer')));
   }
 
-  function rowLine(row: RevealRow, name: string, over: boolean) {
-    const typed = row.typed;
-    const verdict = typed === '' ? '' : row.artistHit ? 'Artist ✓' : 'Artist ✗';
+  /** Host-only artist check: what was typed, the verdict, and the override buttons. Not part of the leaderboard. */
+  function checkLine(row: RevealRow, name: string) {
+    const verdict = row.artistHit ? 'Artist ✓' : 'Artist ✗';
     const btn = (label: string, v: boolean | null, on: boolean) => h('button', {
       class: `btn small ${on ? 'primary' : 'ghost'}`, 'data-override': String(v), 'aria-pressed': String(on),
       onclick: () => void override(row.playerId, v),
     }, label);
     return h('li', { class: 'reveal-row', 'data-player': name, 'data-total': String(row.total) },
       h('span', { class: 'rr-name' }, name),
-      h('span', { class: 'rr-year' }, row.year === null ? 'no answer' : String(row.year)),
-      h('span', { class: 'rr-dist' }, row.distance === null ? '' : row.distance === 0 ? 'spot on' : `off by ${row.distance}`),
-      typed !== '' && h('span', { class: `rr-artist${row.artistHit ? ' hit' : ''}`, 'data-artist-hit': String(row.artistHit) }, `"${typed}" ${verdict}`),
-      typed !== '' && h('span', { class: 'rr-override', 'data-override-for': name },
+      h('span', { class: `rr-artist${row.artistHit ? ' hit' : ''}`, 'data-artist-hit': String(row.artistHit) }, `"${row.typed}" ${verdict}`),
+      h('span', { class: 'rr-override', 'data-override-for': name },
         btn('Count it', true, row.override === true), btn('Reject', false, row.override === false),
-        row.override !== null && btn('Auto', null, false)),
-      h('span', { class: 'rr-total' }, over ? '' : `+${row.total}`));
+        row.override !== null && btn('Auto', null, false)));
   }
 
   function revealScreen(s: HostState) {
     const rv = s.round!.reveal as ClosestYearReveal;
     const byId = new Map(s.players.map((p) => [p.id, p]));
-    const rows = [...rv.rows].sort((a, b) => (a.distance ?? 1e9) - (b.distance ?? 1e9) || b.total - a.total);
-    const gained = new Map(rv.rows.map((r) => [r.playerId, r.total]));
     const sudden = rv.kind === 'sudden_death';
+    const checks = rv.rows.filter((r) => r.typed !== '').sort((a, b) => (byId.get(a.playerId)?.name ?? '').localeCompare(byId.get(b.playerId)?.name ?? ''));
+    const marks = new Map<string, RoundMark>(rv.rows.map((r) => [r.playerId, {
+      ...(sudden ? { note: r.year === null ? 'no answer' : r.distance === 0 ? 'spot on' : `off by ${r.distance}` } : { points: r.total }),
+      artist: sudden || r.typed === '' ? 'none' : r.artistHit ? 'hit' : 'miss',
+    }]));
+    const board = topBoard('closestYear', s.players.map((p) => ({ id: p.id, name: p.name, total: p.score })));
     const o = rv.outcome;
     const label = o.status === 'continue' ? 'Next song' : o.status === 'suddenDeath' ? 'Sudden death' : 'Final results';
     const art = rv.song.artworkUrl;
@@ -265,9 +267,11 @@ export function createHostGame(root: HTMLElement, deps: HostGameDeps): HostGame 
           h('p', { class: 'answer-year', 'data-answer-year': String(rv.song.year) }, String(rv.song.year)),
           h('p', { class: 'answer-song', 'data-answer-song': '' }, `${rv.song.title}`),
           h('p', { class: 'answer-artist' }, [...rv.song.artists, ...rv.song.featuredArtists.map((a) => `feat. ${a}`)].join(', ')))),
-      h('ul', { class: 'reveal-rows' }, ...rows.map((r) => rowLine(r, byId.get(r.playerId)?.name ?? '?', sudden))),
+      leaderboardList('closestYear', board, marks),
       sudden && h('p', { class: 'hint' }, 'Sudden death does not change scores.'),
-      scoreboard(s.players, sudden ? undefined : gained),
+      !sudden && checks.length > 0 && h('details', { class: 'artist-checks', 'data-artist-checks': String(checks.length) },
+        h('summary', {}, `Check artist guesses (${checks.length})`),
+        h('ul', { class: 'reveal-rows' }, ...checks.map((r) => checkLine(r, byId.get(r.playerId)?.name ?? '?')))),
       h('div', { class: 'row-actions' },
         h('button', { class: 'btn primary huge', 'data-action': 'next', disabled: busy ? true : null,
           onclick: () => { if (o.status === 'winner') { ackOver = true; draw(); } else void next(); } }, label),

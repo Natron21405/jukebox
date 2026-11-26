@@ -103,8 +103,10 @@ describe('one Closest Year round, end to end (host + 3 phones, fake network and 
     await until(() => q(hostRoot, '[data-stage=reveal]') !== null, 'host reveal');
     const year = Number(q(hostRoot, '[data-answer-year]')!.getAttribute('data-answer-year'));
     expect(POOL.map((s) => s.year)).toContain(year);
-    expect(hostRoot.querySelectorAll('.reveal-row').length).toBe(3);
-    expect(q(hostRoot, '[data-scoreboard]')!.getAttribute('data-scoreboard')).toBe('3');
+    // One list only: the leaderboard (3 players, so all 3 rows). The old two lists are gone.
+    expect(q(hostRoot, '[data-leaderboard]')!.getAttribute('data-leaderboard')).toBe('3');
+    expect(hostRoot.querySelectorAll('.lb-row').length).toBe(3);
+    expect(q(hostRoot, '[data-scoreboard]')).toBeNull();
     await until(() => phones.every((p) => q(p, '[data-stage=result]') !== null), 'phone results');
     for (const p of phones) expect(q(p, '[data-answer-year]')!.getAttribute('data-answer-year')).toBe(String(year));
     const song = POOL.find((s) => s.year === year)!;
@@ -115,7 +117,8 @@ describe('one Closest Year round, end to end (host + 3 phones, fake network and 
     const before = Number(row.getAttribute('data-total'));
     q(row, '[data-override=true]')!.click();
     await until(() => Number(q(hostRoot, '.reveal-row[data-player=Cy]')!.getAttribute('data-total')) === before + 2, 'override counted (+2)');
-    expect(Number(q(hostRoot, '.score-row[data-player=Cy]')!.getAttribute('data-score'))).toBe(before + 2);
+    await until(() => Number(q(hostRoot, '.lb-row[data-player=Cy]')!.getAttribute('data-total')) >= before + 2, 'leaderboard total follows the override');
+    expect(q(hostRoot, '.lb-row[data-player=Cy] [data-mark=artist]')!.getAttribute('data-ok')).toBe('true');
     await until(() => q(phones[2], '[data-points]')?.getAttribute('data-points') === String(before + 2), 'phone sees the override');
 
     // Next song starts a fresh round and a different clip.

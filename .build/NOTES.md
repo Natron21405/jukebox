@@ -74,3 +74,4 @@ Correction: 04-verifyA:1980s-11 actual counts are 37 high, 3 medium, 0 low (40 a
 - [done 2026-11-26 20:04] 04-verifyA:1990s-07: 40 songs answered blind: 33 high, 7 medium, 0 low
 - [done 2026-11-26 20:04] 04-verifyA:1990s-08: 40 songs answered blind: 35 high, 5 medium, 0 low
 - [done 2026-11-26 20:04] 04-verifyA:1990s-09: 40 songs answered blind: 34 high, 6 medium, 0 low
+- [done 2026-11-26 20:05] 04-verifyA:1990s-12: 20 songs answered blind: 18 high, 2 medium, 0 low

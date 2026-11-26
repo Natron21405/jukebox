@@ -1,4 +1,4 @@
-import { CONFIG, slotLabel, yearRangeOf } from '../logic';
+import { CONFIG, ordinal, rankOf, slotLabel, yearRangeOf } from '../logic';
 import { sendTimelineAnswer, timelinePhoneView, winnerOf, type TimelinePhoneView, type TimelineReveal } from '../game';
 import type { MyState, PlayerRow, PublicRoomState } from '../net';
 import { h, show } from './dom';
@@ -7,7 +7,6 @@ import { cardRow, createTimelinePicker, type TimelinePicker } from './timelinePi
 import { createYearPicker, type YearPicker } from './yearPicker';
 
 const plural = (n: number, w: string) => `${n} ${w}${n === 1 ? '' : 's'}`;
-const ordinal = (n: number) => (n === 1 ? '1st' : n === 2 ? '2nd' : n === 3 ? '3rd' : `${n}th`);
 
 /**
  * The Timeline screens on a phone: waiting, the answer screen (your own timeline with tappable gaps, an artist box,
@@ -209,9 +208,17 @@ export function createPhoneTimeline(root: HTMLElement, deps: PhoneGameDeps): Pho
         year !== undefined && h('p', { class: 'label' }, 'The year was'),
         year !== undefined && h('p', { class: 'locked-year', 'data-answer-year': String(year) }, String(year)),
         ...lines,
-        h('p', { class: 'hint' }, `${plural(view.timeline.length, 'card')} in your timeline · ${plural(view.artistHits, 'artist hit')}`)),
+        h('p', { class: 'hint' }, `${plural(view.timeline.length, 'card')} in your timeline · ${plural(view.artistHits, 'artist hit')}`),
+        ownRank(state)),
       cardRow(view.timeline, newest),
       view.over && finalLine(view, state));
+  }
+
+  /** The player's own place, ties sharing, e.g. "You are 3rd of 12". */
+  function ownRank(state: MyState) {
+    const players: PlayerRow[] = pub?.players ?? [state.player];
+    const rank = rankOf('timeline', players.map((p) => ({ id: p.id, name: p.name, total: p.timeline.length, hits: p.artist_hits })), state.player.id);
+    return rank === null ? null : h('p', { class: 'own-rank', 'data-own-rank': String(rank) }, `You are ${ordinal(rank)} of ${players.length}`);
   }
 
   function standing(state: MyState) {

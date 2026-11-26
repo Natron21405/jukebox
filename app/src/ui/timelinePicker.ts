@@ -1,4 +1,4 @@
-import { chooseSlot, describeSlots, keepSlot, type Card } from '../logic';
+import { chooseSlot, describeSlots, groupStacks, keepSlot, type Card, type CardStack } from '../logic';
 import { h } from './dom';
 
 export interface TimelinePicker {
@@ -25,9 +25,10 @@ export function createTimelinePicker(o: TimelinePickerOptions): TimelinePicker {
   const { timeline } = o;
   let slot = keepSlot(timeline, o.initial);
   const slots = describeSlots(timeline);
-  const buttons: HTMLButtonElement[] = [];
+  const buttons: (HTMLButtonElement | undefined)[] = [];
 
   const paint = () => buttons.forEach((b, i) => {
+    if (!b) return;
     const on = i === slot;
     b.classList.toggle('chosen', on);
     b.setAttribute('aria-pressed', String(on));
@@ -43,25 +44,37 @@ export function createTimelinePicker(o: TimelinePickerOptions): TimelinePicker {
   };
 
   const row = h('ol', { class: 'tl-row', 'data-component': 'timeline-picker', 'data-cards': String(timeline.length) });
-  for (const s of slots) {
+  const addGap = (slot: number) => {
+    const s = slots[slot];
     const b = h('button', {
       class: 'tl-slot', type: 'button', 'data-slot': String(s.slot), 'aria-label': s.label, 'aria-pressed': 'false',
       onclick: () => set(s.slot, true),
     }, h('span', { class: 'slot-text', 'aria-hidden': 'true' }, '+'));
-    buttons.push(b);
+    buttons[slot] = b;
     row.append(h('li', { class: 'tl-gap' }, b));
-    if (s.slot < timeline.length) {
-      const c = timeline[s.slot];
-      row.append(h('li', { class: `tl-card${o.newest?.(c, s.slot) ? ' newest' : ''}`, 'data-card-year': String(c.year) }, String(c.year)));
-    }
+  };
+  // Gaps go around a stack of equal years, never through it (equal years are always valid).
+  for (const st of groupStacks(timeline)) {
+    addGap(st.start);
+    row.append(stackItem(st, o.newest));
   }
+  addGap(timeline.length);
   paint();
 
   return { el: row, value: () => slot, set };
 }
 
-/** A read-only row of cards (result screen, host progress). */
+/** One card, or a pile of equal-year cards with an "x2" / "x3" badge. */
+function stackItem(st: CardStack, newest?: (c: Card, i: number) => boolean): HTMLElement {
+  const isNew = st.cards.some((c, k) => newest?.(c, st.start + k));
+  const cls = `tl-card${isNew ? ' newest' : ''}${st.count > 1 ? ' stack' : ''}`;
+  const attrs: Record<string, string> = { class: cls, 'data-card-year': String(st.year), 'data-stack-size': String(st.count) };
+  if (st.count > 1) attrs['aria-label'] = `${st.year}, ${st.count} cards`;
+  return h('li', attrs, String(st.year), st.count > 1 ? h('span', { class: 'stack-badge', 'data-stack-badge': '' }, `x${st.count}`) : null);
+}
+
+/** A read-only row of cards (result screen, host progress). Cards of the same year form one stack. */
 export function cardRow(timeline: readonly Card[], newest?: (c: Card, i: number) => boolean): HTMLElement {
   return h('ol', { class: 'tl-row static', 'data-component': 'card-row', 'data-cards': String(timeline.length) },
-    ...timeline.map((c, i) => h('li', { class: `tl-card${newest?.(c, i) ? ' newest' : ''}`, 'data-card-year': String(c.year) }, String(c.year))));
+    ...groupStacks(timeline).map((st) => stackItem(st, newest)));
 }

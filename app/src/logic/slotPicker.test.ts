@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { applyPlacement, chooseSlot, correctSlots, describeSlots, keepSlot, slotLabel, validSlot, type Card } from './index';
+import { applyPlacement, chooseSlot, correctSlots, describeSlots, groupStacks, keepSlot, slotLabel, stackSlots, validSlot, type Card } from './index';
 
 const tl = (...years: number[]): Card[] => years.map((year) => ({ year }));
 
@@ -59,5 +59,22 @@ describe('slot choice', () => {
     expect(chooseSlot(line, 1, 9)).toBe(1);
     expect(keepSlot(line, 7)).toBeNull();
     expect(keepSlot(line, 0)).toBe(0);
+  });
+});
+
+describe('stacks', () => {
+  it('groups equal years into stacks that still hold every card', () => {
+    const st = groupStacks(tl(1970, 1980, 1980, 1980, 1990));
+    expect(st.map((s) => [s.year, s.count, s.start])).toEqual([[1970, 1, 0], [1980, 3, 1], [1990, 1, 4]]);
+    expect(st.reduce((n, s) => n + s.count, 0)).toBe(5);
+  });
+  it('slots go around a stack and every year is still placeable', () => {
+    const line = tl(1970, 1980, 1980, 1990);
+    expect(stackSlots(line)).toEqual([0, 1, 3, 4]);
+    for (const year of [1960, 1970, 1975, 1980, 1985, 1990, 2000]) {
+      expect(correctSlots(line, year).some((s) => stackSlots(line).includes(s))).toBe(true);
+    }
+    // same year as the stack: both slots beside it are correct
+    expect(correctSlots(line, 1980).filter((s) => stackSlots(line).includes(s))).toEqual([1, 3]);
   });
 });

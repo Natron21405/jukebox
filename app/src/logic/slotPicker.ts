@@ -49,3 +49,27 @@ export function correctSlots(timeline: readonly Card[], year: number): number[] 
 export function chooseSlot(timeline: readonly Card[], current: number | null, tapped: number): number | null {
   return validSlot(timeline, tapped) ? tapped : keepSlot(timeline, current);
 }
+
+/** Consecutive cards of the same year, shown as one pile. `start` is the index of its first card in the timeline. */
+export interface CardStack {
+  year: number;
+  count: number;
+  start: number;
+  cards: Card[];
+}
+
+/** Group a sorted timeline into stacks of equal years (a single card is a stack of 1). Display only: every card still counts. */
+export function groupStacks(timeline: readonly Card[]): CardStack[] {
+  const stacks: CardStack[] = [];
+  timeline.forEach((c, i) => {
+    const last = stacks[stacks.length - 1];
+    if (last && last.year === c.year) { last.count += 1; last.cards.push(c); }
+    else stacks.push({ year: c.year, count: 1, start: i, cards: [c] });
+  });
+  return stacks;
+}
+
+/** The gaps a player can tap: around stacks, never through one. Equal years are always valid, so this loses no correct answer. */
+export function stackSlots(timeline: readonly Card[]): number[] {
+  return [...groupStacks(timeline).map((s) => s.start), timeline.length];
+}

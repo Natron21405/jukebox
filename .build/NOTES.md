@@ -197,3 +197,5 @@ Correction: 04-verifyA:1980s-11 actual counts are 37 high, 3 medium, 0 low (40 a
 - [done 2026-11-26 20:30] 04-verifyB:2010s-02: 40 songs answered blind: 38 high, 2 medium, 0 low
 04-verifyB:2010s-03: medium ids 2010s-095, 096, 099, 102, 109, 119 are album-before-single or single-date ambiguous (used earlier album year; 096 hit remix is 2013). Reconciler should decide.
 - [done 2026-11-26 20:30] 04-verifyB:2010s-03: 40 songs answered blind: 34 high, 6 medium, 0 low
+04-verifyB:2010s-06: medium id 2010s-203 is album-before-single (album Oct 2014, single 2015; used album year). Reconciler should decide.
+- [done 2026-11-26 20:31] 04-verifyB:2010s-06: 40 songs answered blind: 39 high, 1 medium, 0 low

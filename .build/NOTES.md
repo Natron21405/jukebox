@@ -34,3 +34,4 @@ Keep this file short. Newest information wins.
 - [done 2026-11-26 19:50] 03-curate-2010s: 345 songs curated for 2010s (300 base, 45 extra), checker passes
 03-curate-2020s: data/work/candidates/2020s.json (81 = 70 base + 11 extra), part 2020s-1.json built from data/work/src-2020s-a.txt via data/work/build-2020s.mjs (dedupes, drops out-of-range years, applies artist cap across decades); checker passes. Band names without 'The' carry groupArtists.
 - [done 2026-11-26 19:53] 03-curate-2020s: 81 songs curated for 2020s (70 base, 11 extra), checker passes
+- [done 2026-11-26 19:54] 04-verifyA:1960s-01: 40 songs answered blind: 37 high, 3 medium, 0 low

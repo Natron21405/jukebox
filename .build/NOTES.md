@@ -172,3 +172,5 @@ Correction: 04-verifyA:1980s-11 actual counts are 37 high, 3 medium, 0 low (40 a
 - [done 2026-11-26 20:26] 04-verifyB:1990s-11: 40 songs answered blind: 28 high, 12 medium, 0 low
 04-verifyB:2000s-01: medium ids 2000s-002, 008, 013, 014, 018, 020, 025, 032, 036, 038, 039 are album-before-single (used earlier album year). Reconciler should decide.
 - [done 2026-11-26 20:26] 04-verifyB:2000s-01: 40 songs answered blind: 29 high, 11 medium, 0 low
+04-verifyB:2000s-02: medium ids 2000s-042, 043, 046, 047, 054, 072, 074, 075, 078 are album-before-single (used earlier album year) or indie-single-first (047). Reconciler should decide.
+- [done 2026-11-26 20:26] 04-verifyB:2000s-02: 40 songs answered blind: 31 high, 9 medium, 0 low

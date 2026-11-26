@@ -166,3 +166,23 @@ h1, h2, p { margin: 0; }
 .sb-gain { color: var(--good); font-weight: 800; }
 .sb-score { font-size: 1.6rem; font-weight: 900; font-variant-numeric: tabular-nums; min-width: 2.5em; text-align: right; }
 .winner-line { font-size: clamp(2.5rem, 8vw, 4.5rem); font-weight: 900; color: var(--accent); }
+
+/* Timeline: a scrolling row of year cards with big tappable gaps between them */
+.tl-row { list-style: none; margin: 0; padding: 8px 4px 12px; display: flex; align-items: center; gap: 6px; overflow-x: auto; scroll-snap-type: x proximity; -webkit-overflow-scrolling: touch; }
+.tl-row.static { justify-content: flex-start; }
+.tl-gap { flex: none; scroll-snap-align: center; }
+.tl-slot { width: var(--tap); min-height: 96px; border-radius: 14px; border: 2px dashed var(--muted); background: transparent; color: var(--muted); font: inherit; font-size: 1.6rem; font-weight: 900; cursor: pointer; touch-action: manipulation; display: grid; place-items: center; }
+.tl-slot:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.tl-slot.chosen { width: 88px; border-style: solid; border-color: var(--accent); background: var(--accent); color: var(--accent-ink); font-size: 1.1rem; box-shadow: 0 0 0 4px rgba(255, 79, 163, 0.35); }
+.tl-card { flex: none; min-width: 84px; min-height: 96px; padding: 0 12px; display: grid; place-items: center; background: var(--panel-2); border-radius: 14px; font-size: 1.5rem; font-weight: 900; font-variant-numeric: tabular-nums; scroll-snap-align: center; }
+.tl-card.newest { background: var(--good); color: var(--accent-ink); box-shadow: 0 0 0 4px rgba(61, 220, 151, 0.35); }
+.locked-slot { font-size: 1.8rem; font-weight: 900; }
+.result-verdict { font-size: 1.5rem; font-weight: 900; }
+.result-verdict.right { color: var(--good); }
+.result-verdict.wrong { color: var(--bad); }
+.rr-placed { font-size: 1.3rem; font-weight: 800; }
+.rr-placed.right { color: var(--good); }
+.rr-placed.wrong { color: var(--bad); }
+.sb-bar { flex: 1 1 6em; height: 12px; background: var(--panel); border-radius: 6px; overflow: hidden; }
+.sb-fill { display: block; height: 100%; background: var(--accent); transition: width 0.4s; }
+.sb-hits { color: var(--muted); font-weight: 800; min-width: 2.5em; }

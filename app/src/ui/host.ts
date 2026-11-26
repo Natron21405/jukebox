@@ -8,6 +8,7 @@ import {
 import type { GameSong } from '../logic';
 import { h, show } from './dom';
 import { createHostGame, htmlClipPlayer, type ClipPlayer, type HostGame } from './hostGame';
+import { createHostTimeline } from './hostTimeline';
 import { qrElement } from './qr';
 import { joinAddressText, joinUrl } from './route';
 
@@ -51,8 +52,9 @@ export async function mountHost(root: HTMLElement, deps: HostDeps): Promise<Host
   let kickArmed: string | null = null;
   let kickTimer: ReturnType<typeof setTimeout> | undefined;
   let stopped = false;
-  let game: HostGame | null = null;
-  const inClosestYear = (s: PublicRoomState) => s.room.mode === 'closest_year' && s.room.status !== 'lobby';
+  // One controller per mode; each draws only while the room is in its own mode and not in the lobby.
+  let games: Record<GameMode, HostGame> | null = null;
+  const inGame = (s: PublicRoomState) => s.room.status !== 'lobby';
 
   const teardown = async () => {
     const list = stops; stops = [];
@@ -166,41 +168,32 @@ export async function mountHost(root: HTMLElement, deps: HostDeps): Promise<Host
         error && h('p', { class: 'notice', role: 'alert' }, error),
         h('button', {
           class: 'btn primary huge', 'data-action': 'start', disabled: check.ok ? null : true,
-          onclick: () => void act(() => (mode === 'closest_year' ? game!.start() : session!.updateRoom({ status: 'playing' }))),
+          onclick: () => void act(() => games![mode].start()),
         }, 'Start game'),
         !check.ok && h('p', { class: 'hint' }, check.reason),
       ),
     );
   }
 
-  /** Until the game screens exist, a started room shows this (the code stays visible, as the plan requires). */
-  function inGameView(s: PublicRoomState) {
-    return h('main', { class: 'screen host center' },
-      h('h1', { class: 'logo' }, s.room.status === 'over' ? 'Game over' : 'Game on'),
-      h('p', { class: 'lead' }, `${s.players.length} players, ${MODE_LABELS[s.room.mode as GameMode]}.`),
-      h('button', { class: 'btn ghost', 'data-action': 'back-to-lobby', onclick: () => void act(() => session!.updateRoom({ status: 'lobby' })) }, 'Back to lobby'),
-      joinStrip(s.room.code, true),
-    );
-  }
-
   function render() {
     if (stopped) return;
     if (!state) return;
-    if (inClosestYear(state)) { game?.onPublic(state); return; } // the game screens draw themselves
-    game?.onPublic(state); // lets the game reset when the room goes back to the lobby
-    show(root, state.room.status === 'lobby' ? lobbyView(state) : inGameView(state));
+    games?.closest_year.onPublic(state); // each also resets itself when the room goes back to the lobby
+    games?.timeline.onPublic(state);
+    if (!inGame(state)) show(root, lobbyView(state)); // in a game, the game's own screens draw themselves
   }
 
   // ------------------------------------------------------------------ lifecycle
   async function open(creds: { code: string; roomId: string; hostToken: string }) {
     session = new HostSession(backend, creds);
-    game?.stop();
-    game = createHostGame(root, {
+    if (games) { games.closest_year.stop(); games.timeline.stop(); }
+    const gameDeps = {
       session, player: deps.player ?? htmlClipPlayer(), now: deps.now, rng: deps.rng,
       loadPool: deps.loadPool ?? defaultLoadPool,
       joinStrip: () => joinStrip(creds.code, true),
       onLobby: () => void act(() => session!.updateRoom({ status: 'lobby' })),
-    });
+    };
+    games = { closest_year: createHostGame(root, gameDeps), timeline: createHostTimeline(root, gameDeps) };
     try {
       stops.push(await session.mirrorPresence());
       stops.push(await watchRoom(backend, creds.roomId, (s) => { if (!stopped) { state = s; render(); } }));
@@ -240,7 +233,7 @@ export async function mountHost(root: HTMLElement, deps: HostDeps): Promise<Host
   return {
     async stop() {
       stopped = true;
-      game?.stop();
+      games?.closest_year.stop(); games?.timeline.stop();
       clearTimeout(kickTimer);
       document.removeEventListener('visibilitychange', onVisible);
       await teardown();

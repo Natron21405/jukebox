@@ -5,6 +5,7 @@ import {
 } from '../net';
 import { h, show } from './dom';
 import { createPhoneGame, type PhoneGame } from './phoneGame';
+import { createPhoneTimeline } from './phoneTimeline';
 
 export interface PhoneDeps {
   backend: Backend;
@@ -25,12 +26,13 @@ export async function mountPhone(root: HTMLElement, deps: PhoneDeps): Promise<Ph
   let state: PublicRoomState | null = null;
   let seat: StoredSeat | null = null;
   let stopped = false;
-  let game: PhoneGame | null = null;
-  const inClosestYear = (s: PublicRoomState | null) => !!s && s.room.mode === 'closest_year' && s.room.status !== 'lobby';
+  // One screen set per mode; each draws only while the room is in its own mode and not in the lobby.
+  let games: Record<GameMode, PhoneGame> | null = null;
+  const inGame = (s: PublicRoomState | null) => !!s && s.room.status !== 'lobby';
 
   const endSession = async () => {
     const s = session, u = unwatch;
-    game?.stop(); game = null;
+    games?.closest_year.stop(); games?.timeline.stop(); games = null;
     session = null; unwatch = null; state = null; seat = null;
     if (u) await Promise.resolve(u()).catch(() => undefined);
     if (s) await s.stop().catch(() => undefined);
@@ -96,9 +98,7 @@ export async function mountPhone(root: HTMLElement, deps: PhoneDeps): Promise<Ph
     show(root, h('main', { class: 'screen phone center' },
       h('p', { class: 'label' }, `Room ${seat.code}`),
       h('h1', { class: 'you', 'data-you': seat.name }, seat.name),
-      lobby
-        ? h('p', { class: 'lead waiting', 'data-state': 'waiting' }, 'You are in. Waiting for the host to start…')
-        : h('p', { class: 'lead', 'data-state': 'playing' }, s!.room.status === 'over' ? 'The game is over.' : 'The game has started.'),
+      h('p', { class: 'lead waiting', 'data-state': 'waiting' }, 'You are in. Waiting for the host to start…'),
       s && h('p', { class: 'hint' },
         others.length === 0 ? 'You are the first one here.' : `${others.length} other ${others.length === 1 ? 'player' : 'players'} here`),
       s && lobby && h('p', { class: 'hint' },
@@ -128,9 +128,9 @@ export async function mountPhone(root: HTMLElement, deps: PhoneDeps): Promise<Ph
       return;
     }
     state = next;
-    if (inClosestYear(next) && game) { game.onPublic(next); return; } // the game screens draw themselves
-    game?.onPublic(next);
-    renderSeat();
+    games?.closest_year.onPublic(next);
+    games?.timeline.onPublic(next);
+    if (!inGame(next) || !games) renderSeat(); // in a game, the game's own screens draw themselves
   }
 
   async function enter(found: StoredSeat) {
@@ -138,7 +138,10 @@ export async function mountPhone(root: HTMLElement, deps: PhoneDeps): Promise<Ph
     seat = found;
     renderSeat();
     session = await startPhoneSession(backend, found);
-    game = createPhoneGame(root, { phone: session, seat: found });
+    games = {
+      closest_year: createPhoneGame(root, { phone: session, seat: found }),
+      timeline: createPhoneTimeline(root, { phone: session, seat: found }),
+    };
     try {
       unwatch = await watchRoom(backend, found.roomId, onState);
     } catch {
@@ -148,7 +151,7 @@ export async function mountPhone(root: HTMLElement, deps: PhoneDeps): Promise<Ph
 
   const onVisible = () => {
     if (document.visibilityState !== 'visible' || !seat) return;
-    if (inClosestYear(state)) void game?.refresh();
+    if (inGame(state)) void games?.[state!.room.mode as GameMode]?.refresh();
     void backend.getMyState(seat.seatToken).then((m) => {
       if (!m && seat && !stopped) void backToJoin('You are no longer in that room.', { code: seat.code, name: seat.name });
     }).catch(() => undefined);

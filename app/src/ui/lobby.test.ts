@@ -9,6 +9,12 @@ const PAGE = 'https://example.test/jukebox/';
 const tick = async (n = 12) => { for (let i = 0; i < n; i++) await new Promise((r) => setTimeout(r, 0)); };
 const q = <T extends Element = HTMLElement>(root: Element, sel: string) => root.querySelector<T>(sel);
 
+// Made-up songs, just enough for Start to deal a game.
+const POOL = Array.from({ length: 6 }, (_, i) => ({
+  id: `test-${i + 1}`, title: `Test Song ${i + 1}`, artists: [`Fake Band ${i + 1}`], featuredArtists: [],
+  year: 1970 + i * 7, previewUrl: `https://audio.invalid/clip-${i + 1}.m4a`,
+}));
+
 function newRoot() {
   const el = document.createElement('div');
   document.body.append(el);
@@ -25,7 +31,7 @@ describe('lobby screens (host + phones, driven by the fake net layer)', () => {
 
   async function startHost(backend = createFakeBackend(), kv = memoryKV()) {
     const root = newRoot();
-    const app = track(await mountHost(root, { backend, kv, pageUrl: () => PAGE }));
+    const app = track(await mountHost(root, { backend, kv, pageUrl: () => PAGE, loadPool: async () => POOL }));
     return { root, app, backend, kv };
   }
   async function startPhone(backend: ReturnType<typeof createFakeBackend>, kv = memoryKV(), code = '') {
@@ -178,8 +184,8 @@ describe('lobby screens (host + phones, driven by the fake net layer)', () => {
     await tick();
     q(host.root, '[data-action=start]')!.click();
     await tick();
-    expect(q(host.root, '[data-action=back-to-lobby]')).not.toBeNull();
-    // Closest Year is the default mode, so phones move on to the game screens (the lobby "waiting" line is gone).
+    expect(q(host.root, '[data-stage=between]')).not.toBeNull(); // the host moved on to the game screens
+    // Phones move on to the game screens too (the lobby "waiting" line is gone).
     for (const p of phones) {
       expect(q(p.root, '[data-stage=waiting]')).not.toBeNull();
       expect(q(p.root, '[data-state=waiting]')).toBeNull();

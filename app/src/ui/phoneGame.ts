@@ -53,7 +53,7 @@ export function createPhoneGame(root: HTMLElement, deps: PhoneGameDeps): PhoneGa
 
   function onPublic(s: PublicRoomState) {
     pub = s;
-    if (s.room.status === 'lobby') { lastKey = ''; drawn = ''; my = null; clearTimers(); return; }
+    if (s.room.mode !== 'closest_year' || s.room.status === 'lobby') { lastKey = ''; drawn = ''; my = null; clearTimers(); return; }
     const key = `${s.room.status}|${s.room.game_no}|${s.room.mode}|${s.round?.id ?? ''}|${s.round?.status ?? ''}|${s.players.find((p) => p.id === seat.playerId)?.score ?? ''}`; // my score changes when the host overrides an artist
     if (key !== lastKey) { lastKey = key; void refresh(); }
   }
@@ -241,7 +241,7 @@ export function createPhoneGame(root: HTMLElement, deps: PhoneGameDeps): PhoneGa
 
   // ------------------------------------------------------------------ choose and draw
   function draw() {
-    if (stopped || !my) return;
+    if (stopped || !my || my.room.mode !== 'closest_year') return;
     const view = phoneView(my);
     const round = my.round;
     // Forget a local lock from an older round.

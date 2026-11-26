@@ -95,7 +95,7 @@ export function createHostGame(root: HTMLElement, deps: HostGameDeps): HostGame 
 
   function onPublic(s: PublicRoomState) {
     pub = s;
-    if (s.room.mode !== 'closest_year' || s.room.status === 'lobby') { stopTick(); return; }
+    if (s.room.mode !== 'closest_year' || s.room.status === 'lobby') { stopTick(); lastKey = ''; return; }
     const key = `${s.room.status}|${s.room.game_no}|${s.round?.id ?? ''}|${s.round?.status ?? ''}|${s.locked.length}|${s.players.map((p) => `${p.score}${p.connected ? 1 : 0}`).join(',')}`;
     if (key === lastKey) return;
     lastKey = key;
@@ -287,7 +287,7 @@ export function createHostGame(root: HTMLElement, deps: HostGameDeps): HostGame 
 
   // ------------------------------------------------------------------ draw
   function draw() {
-    if (stopped || !hs) return;
+    if (stopped || !hs || hs.room.mode !== 'closest_year') return;
     countdownEl = null; progressEl = null;
     const phase = gamePhase(hs);
     if (phase !== 'listening') { player.stop(); playingRound = ''; needTap = false; clipFailed = false; }

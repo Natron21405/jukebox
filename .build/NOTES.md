@@ -191,3 +191,5 @@ Correction: 04-verifyA:1980s-11 actual counts are 37 high, 3 medium, 0 low (40 a
 - [done 2026-11-26 20:29] 04-verifyB:2000s-10: 40 songs answered blind: 28 high, 11 medium, 1 low
 04-verifyB:2000s-08: id 2000s-291 (title/artist pairing) could not be found as a real recording; answered low as a guess. Medium ids 2000s-281, 285, 287, 294, 295, 297, 302, 305, 309, 315 are album-before-single (used earlier album/soundtrack year); 311 studio single 2008 (a 2005 demo EP exists). Reconciler should decide.
 - [done 2026-11-26 20:29] 04-verifyB:2000s-08: 40 songs answered blind: 28 high, 11 medium, 1 low
+04-verifyB:2010s-01: medium ids 2010s-001 (single Dec 2009 vs 2010 album; answered 2009), 010 (album Dec 2012 before 2013 single), 012 (Feb 2009 mixtape version exists; answered 2010 single recording), 018 (album Nov 2009 before 2010 single). Reconciler should decide.
+- [done 2026-11-26 20:30] 04-verifyB:2010s-01: 40 songs answered blind: 36 high, 4 medium, 0 low

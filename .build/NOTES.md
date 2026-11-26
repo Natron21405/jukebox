@@ -26,3 +26,5 @@ Keep this file short. Newest information wins.
 - [done 2026-11-26 19:22] 03-curate-1970s: 403 songs curated for 1970s (350 base, 53 extra), checker passes
 - [done 2026-11-26 19:31] 03-curate-1980s: 460 songs curated for 1980s (400 base, 60 extra), checker passes
 03-curate-1980s: data/work/candidates/1980s.json (460 = 400 base + 60 extra), parts 1980s-1..5.json built from data/work/src-1980s-*.txt via data/work/build-1980s.mjs (dedupes, applies artist cap across decades); checker passes. Band names without 'The' carry groupArtists.
+03-curate-1990s: data/work/candidates/1990s.json (460 = 400 base + 60 extra), parts 1990s-1..5.json built from data/work/src-1990s-*.txt via data/work/build-1990s.mjs (dedupes, applies artist cap across decades); checker passes. Band names without 'The' carry groupArtists.
+- [done 2026-11-26 19:38] 03-curate-1990s: 460 songs curated for 1990s (400 base, 60 extra), checker passes

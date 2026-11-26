@@ -32,6 +32,25 @@ export const CONFIG = {
 
   artistBonus: 2,
 
+  /** Year picker on the phone (Closest Year). */
+  yearPicker: {
+    /** Press-and-hold on the plus/minus buttons: wait this long, then repeat every holdRepeatMs. */
+    holdDelayMs: 350,
+    holdRepeatMs: 110,
+    /** After this many repeats the hold speeds up to holdFastRepeatMs. */
+    holdFastAfter: 10,
+    holdFastRepeatMs: 55,
+    /** Pause after the last change before the phone saves the answer (it is saved at once on Lock In). */
+    saveDebounceMs: 400,
+    /** Tick labels under the slider: every 10 years, or every 5 when the range is this short or shorter. */
+    shortRangeYears: 40,
+  },
+
+  host: {
+    /** How often the host screen redraws the countdown and checks whether the round should end. */
+    tickMs: 1000,
+  },
+
   /** Host lobby: what the host may choose, and when the Start button turns on. */
   lobby: {
     minPlayersToStart: 2,

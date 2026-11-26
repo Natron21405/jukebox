@@ -98,3 +98,71 @@ h1, h2, p { margin: 0; }
   .stepper { grid-template-columns: 1fr auto 3.5em auto; }
   .code-field { letter-spacing: 0.25em; }
 }
+
+/* ---------- Year picker (phone) ---------- */
+.year-picker { display: flex; flex-direction: column; gap: 14px; user-select: none; -webkit-user-select: none; }
+.year-top { display: grid; grid-template-columns: 76px 1fr 76px; align-items: center; gap: 8px; }
+.year-readout { text-align: center; font-size: clamp(4rem, 22vw, 6rem); font-weight: 900; line-height: 1; font-variant-numeric: tabular-nums; color: var(--text); }
+.btn.step-btn { min-height: 76px; min-width: 76px; font-size: 2.6rem; padding: 0; touch-action: none; }
+.year-slider-wrap { position: relative; padding: 4px 14px 30px; }
+.year-slider { width: 100%; height: 44px; margin: 0; accent-color: var(--accent); touch-action: pan-y; background: transparent; }
+.year-ticks { position: absolute; left: 14px; right: 14px; bottom: 4px; height: 22px; pointer-events: none; }
+.year-tick { position: absolute; left: calc(var(--at) * 100%); transform: translateX(-50%); font-size: 0.8rem; color: var(--muted); white-space: nowrap; }
+.year-tick::before { content: ''; position: absolute; left: 50%; top: -10px; width: 2px; height: 8px; background: var(--muted); transform: translateX(-50%); }
+.year-chips { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+.chip { font: inherit; font-weight: 700; min-height: 44px; min-width: 56px; padding: 0 12px; border-radius: 22px; border: 2px solid var(--panel-2); background: transparent; color: var(--muted); cursor: pointer; touch-action: manipulation; }
+.chip.on { background: var(--panel-2); color: var(--text); border-color: var(--accent); }
+
+/* ---------- Phone game screens ---------- */
+.screen.phone.game { min-height: 100dvh; }
+.phone-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; color: var(--muted); font-weight: 700; }
+.you-small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 40%; }
+.score-chip { background: var(--panel-2); border-radius: 999px; padding: 4px 12px; color: var(--text); }
+.countdown { font-size: 1.6rem; font-weight: 900; color: var(--text); font-variant-numeric: tabular-nums; }
+.countdown.low { color: var(--bad); }
+.center-text { text-align: center; }
+.big-message { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 12px; min-height: 50dvh; }
+.locked-badge { font-size: 1.6rem; font-weight: 900; color: var(--good); }
+.locked-year { font-size: 4.5rem; font-weight: 900; line-height: 1; font-variant-numeric: tabular-nums; }
+.locked-artist, .result-line { font-size: 1.2rem; }
+.points { font-size: 2.2rem; font-weight: 900; color: var(--accent); }
+.final-line { margin-top: 16px; display: flex; flex-direction: column; gap: 6px; align-items: center; }
+
+/* ---------- Host game screens ---------- */
+.screen.host.game { gap: 20px; padding: 20px; }
+.game-head { display: flex; justify-content: space-between; align-items: center; gap: 16px; }
+.round-label { font-size: 1.6rem; font-weight: 800; color: var(--muted); }
+.game-head .join-strip { align-items: flex-end; }
+.game-head .join-strip .join-line, .game-head .join-strip .join-address { display: none; }
+.game-head .join-strip .room-code { font-size: 2.2rem; letter-spacing: 0.1em; }
+.stage-center { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 16px; padding: 12px 0; }
+.stage-center .lead { font-size: 1.8rem; font-weight: 700; }
+.note-art { font-size: 6rem; line-height: 1; color: var(--accent); }
+.countdown-big { font-size: clamp(5rem, 16vw, 10rem); font-weight: 900; line-height: 1; font-variant-numeric: tabular-nums; }
+.countdown-big.low { color: var(--bad); }
+.progress { font-size: 1.4rem; color: var(--muted); }
+.row-actions { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; }
+.row-actions .btn.huge { width: auto; min-width: 280px; }
+.reveal-card { display: flex; gap: 20px; align-items: center; background: var(--panel); border-radius: var(--radius); padding: 16px; }
+.artwork { width: 160px; height: 160px; border-radius: 12px; flex: none; object-fit: cover; }
+.reveal-text { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.answer-year { font-size: clamp(3.5rem, 12vw, 6rem); font-weight: 900; line-height: 1; color: var(--accent); }
+.answer-song { font-size: 1.8rem; font-weight: 800; word-break: break-word; }
+.answer-artist { color: var(--muted); font-size: 1.3rem; }
+.reveal-rows { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.reveal-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; background: var(--panel); border-radius: 12px; padding: 8px 16px; min-height: 56px; }
+.rr-name { font-weight: 800; font-size: 1.3rem; min-width: 7em; flex: 1 1 8em; word-break: break-word; }
+.rr-year { font-size: 1.5rem; font-weight: 800; font-variant-numeric: tabular-nums; }
+.rr-dist { color: var(--muted); }
+.rr-artist { color: var(--bad); }
+.rr-artist.hit { color: var(--good); }
+.rr-override { display: flex; gap: 6px; }
+.rr-total { font-size: 1.5rem; font-weight: 900; color: var(--accent); margin-left: auto; }
+.scoreboard { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; counter-reset: place; }
+.score-row { display: flex; align-items: center; gap: 12px; background: var(--panel-2); border-radius: 12px; padding: 6px 16px; min-height: 52px; counter-increment: place; }
+.score-row::before { content: counter(place); width: 1.6em; color: var(--muted); font-weight: 800; }
+.score-row.winner { background: var(--accent); color: var(--accent-ink); }
+.sb-name { flex: 1; font-weight: 700; font-size: 1.3rem; word-break: break-word; }
+.sb-gain { color: var(--good); font-weight: 800; }
+.sb-score { font-size: 1.6rem; font-weight: 900; font-variant-numeric: tabular-nums; min-width: 2.5em; text-align: right; }
+.winner-line { font-size: clamp(2.5rem, 8vw, 4.5rem); font-weight: 900; color: var(--accent); }

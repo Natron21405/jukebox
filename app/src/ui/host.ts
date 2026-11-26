@@ -5,7 +5,9 @@ import {
   HostSession, createHostRoom, forgetHost, loadPublicState, resumeHost, watchRoom,
   type Backend, type KV, type PlayerRow, type PublicRoomState,
 } from '../net';
+import type { GameSong } from '../logic';
 import { h, show } from './dom';
+import { createHostGame, htmlClipPlayer, type ClipPlayer, type HostGame } from './hostGame';
 import { qrElement } from './qr';
 import { joinAddressText, joinUrl } from './route';
 
@@ -14,8 +16,22 @@ export interface HostDeps {
   kv: KV;
   /** The address of this page, used to build the join link and QR code. */
   pageUrl: () => string;
+  /** Loads the song list for Closest Year. Defaults to fetching songs.json next to the app. */
+  loadPool?: () => Promise<GameSong[]>;
+  /** Plays the clip on this device (injectable for tests). */
+  player?: ClipPlayer;
+  now?: () => number;
+  rng?: () => number;
 }
 export interface HostApp { stop(): Promise<void> }
+
+/** songs.json is built by the song pipeline and shipped next to the app (a list of songs, or an object holding one). */
+async function defaultLoadPool(): Promise<GameSong[]> {
+  const res = await fetch(`${import.meta.env.BASE_URL}songs.json`);
+  if (!res.ok) throw new Error('songs.json not available');
+  const data = await res.json() as GameSong[] | { songs: GameSong[] };
+  return Array.isArray(data) ? data : data.songs;
+}
 
 const MODE_BLURB: Record<GameMode, (s: LobbySettings) => string> = {
   timeline: (s) => `Everyone builds their own timeline and places every song. First to ${s.targetCards} cards wins.`,
@@ -35,6 +51,8 @@ export async function mountHost(root: HTMLElement, deps: HostDeps): Promise<Host
   let kickArmed: string | null = null;
   let kickTimer: ReturnType<typeof setTimeout> | undefined;
   let stopped = false;
+  let game: HostGame | null = null;
+  const inClosestYear = (s: PublicRoomState) => s.room.mode === 'closest_year' && s.room.status !== 'lobby';
 
   const teardown = async () => {
     const list = stops; stops = [];
@@ -148,7 +166,7 @@ export async function mountHost(root: HTMLElement, deps: HostDeps): Promise<Host
         error && h('p', { class: 'notice', role: 'alert' }, error),
         h('button', {
           class: 'btn primary huge', 'data-action': 'start', disabled: check.ok ? null : true,
-          onclick: () => void act(() => session!.updateRoom({ status: 'playing' })),
+          onclick: () => void act(() => (mode === 'closest_year' ? game!.start() : session!.updateRoom({ status: 'playing' }))),
         }, 'Start game'),
         !check.ok && h('p', { class: 'hint' }, check.reason),
       ),
@@ -168,12 +186,21 @@ export async function mountHost(root: HTMLElement, deps: HostDeps): Promise<Host
   function render() {
     if (stopped) return;
     if (!state) return;
+    if (inClosestYear(state)) { game?.onPublic(state); return; } // the game screens draw themselves
+    game?.onPublic(state); // lets the game reset when the room goes back to the lobby
     show(root, state.room.status === 'lobby' ? lobbyView(state) : inGameView(state));
   }
 
   // ------------------------------------------------------------------ lifecycle
   async function open(creds: { code: string; roomId: string; hostToken: string }) {
     session = new HostSession(backend, creds);
+    game?.stop();
+    game = createHostGame(root, {
+      session, player: deps.player ?? htmlClipPlayer(), now: deps.now, rng: deps.rng,
+      loadPool: deps.loadPool ?? defaultLoadPool,
+      joinStrip: () => joinStrip(creds.code, true),
+      onLobby: () => void act(() => session!.updateRoom({ status: 'lobby' })),
+    });
     try {
       stops.push(await session.mirrorPresence());
       stops.push(await watchRoom(backend, creds.roomId, (s) => { if (!stopped) { state = s; render(); } }));
@@ -213,6 +240,7 @@ export async function mountHost(root: HTMLElement, deps: HostDeps): Promise<Host
   return {
     async stop() {
       stopped = true;
+      game?.stop();
       clearTimeout(kickTimer);
       document.removeEventListener('visibilitychange', onVisible);
       await teardown();

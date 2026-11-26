@@ -179,7 +179,11 @@ describe('lobby screens (host + phones, driven by the fake net layer)', () => {
     q(host.root, '[data-action=start]')!.click();
     await tick();
     expect(q(host.root, '[data-action=back-to-lobby]')).not.toBeNull();
-    for (const p of phones) expect(q(p.root, '[data-state=playing]')).not.toBeNull();
+    // Closest Year is the default mode, so phones move on to the game screens (the lobby "waiting" line is gone).
+    for (const p of phones) {
+      expect(q(p.root, '[data-stage=waiting]')).not.toBeNull();
+      expect(q(p.root, '[data-state=waiting]')).toBeNull();
+    }
   });
 
   it('tells a phone about a wrong room code and a short code without joining', async () => {

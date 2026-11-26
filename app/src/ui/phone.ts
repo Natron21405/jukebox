@@ -4,6 +4,7 @@ import {
   type Backend, type KV, type PhoneSession, type PublicRoomState, type StoredSeat,
 } from '../net';
 import { h, show } from './dom';
+import { createPhoneGame, type PhoneGame } from './phoneGame';
 
 export interface PhoneDeps {
   backend: Backend;
@@ -24,9 +25,12 @@ export async function mountPhone(root: HTMLElement, deps: PhoneDeps): Promise<Ph
   let state: PublicRoomState | null = null;
   let seat: StoredSeat | null = null;
   let stopped = false;
+  let game: PhoneGame | null = null;
+  const inClosestYear = (s: PublicRoomState | null) => !!s && s.room.mode === 'closest_year' && s.room.status !== 'lobby';
 
   const endSession = async () => {
     const s = session, u = unwatch;
+    game?.stop(); game = null;
     session = null; unwatch = null; state = null; seat = null;
     if (u) await Promise.resolve(u()).catch(() => undefined);
     if (s) await s.stop().catch(() => undefined);
@@ -124,6 +128,8 @@ export async function mountPhone(root: HTMLElement, deps: PhoneDeps): Promise<Ph
       return;
     }
     state = next;
+    if (inClosestYear(next) && game) { game.onPublic(next); return; } // the game screens draw themselves
+    game?.onPublic(next);
     renderSeat();
   }
 
@@ -132,6 +138,7 @@ export async function mountPhone(root: HTMLElement, deps: PhoneDeps): Promise<Ph
     seat = found;
     renderSeat();
     session = await startPhoneSession(backend, found);
+    game = createPhoneGame(root, { phone: session, seat: found });
     try {
       unwatch = await watchRoom(backend, found.roomId, onState);
     } catch {
@@ -141,6 +148,7 @@ export async function mountPhone(root: HTMLElement, deps: PhoneDeps): Promise<Ph
 
   const onVisible = () => {
     if (document.visibilityState !== 'visible' || !seat) return;
+    if (inClosestYear(state)) void game?.refresh();
     void backend.getMyState(seat.seatToken).then((m) => {
       if (!m && seat && !stopped) void backToJoin('You are no longer in that room.', { code: seat.code, name: seat.name });
     }).catch(() => undefined);

@@ -9,3 +9,4 @@ export * from './selection';
 export * from './names';
 export * from './lobby';
 export * from './closestYearRound';
+export * from './yearPicker';

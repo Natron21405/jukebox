@@ -135,3 +135,4 @@ Correction: 04-verifyA:1980s-11 actual counts are 37 high, 3 medium, 0 low (40 a
 - [done 2026-11-26 20:21] 04-verifyB:1980s-05: 40 songs answered blind: 38 high, 2 medium, 0 low
 04-verifyB:1980s-06: ids 1980s-206 (earlier different 1984 recording exists; answered the well-known 1985 recording) and 1980s-215 (single Dec 1986 per one source; answered 1986) are medium. Reconciler should decide.
 - [done 2026-11-26 20:21] 04-verifyB:1980s-06: 40 songs answered blind: 38 high, 2 medium, 0 low
+- [done 2026-11-26 20:21] 04-verifyB:1980s-08: 40 songs answered blind: 38 high, 2 medium, 0 low

@@ -24,3 +24,5 @@ Keep this file short. Newest information wins.
 - [done 2026-11-26 19:16] 03-curate-1960s: 161 songs curated for 1960s (140 base, 21 extra), checker passes
 03-curate-1970s: data/work/candidates/1970s.json (403 = 350 base + 53 extra), parts 1970s-1..5.json (built from data/work/src-1970s-*.txt via data/work/build-1970s.mjs); checker passes. Rolling Stones artist cap is full across 1960s+1970s. Band names without 'The' carry groupArtists.
 - [done 2026-11-26 19:22] 03-curate-1970s: 403 songs curated for 1970s (350 base, 53 extra), checker passes
+- [done 2026-11-26 19:31] 03-curate-1980s: 460 songs curated for 1980s (400 base, 60 extra), checker passes
+03-curate-1980s: data/work/candidates/1980s.json (460 = 400 base + 60 extra), parts 1980s-1..5.json built from data/work/src-1980s-*.txt via data/work/build-1980s.mjs (dedupes, applies artist cap across decades); checker passes. Band names without 'The' carry groupArtists.

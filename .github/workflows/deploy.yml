@@ -1,6 +1,7 @@
-# Stub: builds the app and publishes it to GitHub Pages. Phase 13 finishes and verifies the deploy.
-# One-time setup: repo Settings > Pages > Source = "GitHub Actions"; add repo secrets
+# Builds the app (tests first) and publishes it to GitHub Pages at /jukebox/.
+# One-time setup: repo Settings > Pages > Source = "GitHub Actions"; add repository VARIABLES
 # VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY (publishable key only, never the database URL).
+# Set them with:  node tools/set-pages-vars.mjs
 name: Deploy to GitHub Pages
 on:
   push:
@@ -30,8 +31,8 @@ jobs:
       - run: npm test
       - run: npm run build
         env:
-          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
-          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
+          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY }}
       - uses: actions/upload-pages-artifact@v3
         with:
           path: app/dist

@@ -51,3 +51,4 @@ Keep this file short. Newest information wins.
 - [done 2026-11-26 19:59] 04-verifyA:1970s-09: 40 songs answered blind: 33 high, 7 medium, 0 low
 - [done 2026-11-26 19:59] 04-verifyA:1970s-11: 3 songs answered blind: 3 high, 0 medium, 0 low
 - [done 2026-11-26 19:59] 04-verifyA:1970s-10: 40 songs answered blind: 38 high, 2 medium, 0 low
+- [done 2026-11-26 19:59] 04-verifyA:1970s-08: 40 songs answered blind: 38 high, 2 medium, 0 low

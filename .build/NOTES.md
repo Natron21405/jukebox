@@ -205,3 +205,5 @@ Correction: 04-verifyA:1980s-11 actual counts are 37 high, 3 medium, 0 low (40 a
 - [done 2026-11-26 20:31] 04-verifyB:2010s-05: 40 songs answered blind: 38 high, 2 medium, 0 low
 04-verifyB:2010s-07: medium ids 2010s-241 (album Dec 2019 before 2020 single), 252 (May 2018 track, radio Dec 2018), 253 and 255 (2015 EP before 2016 radio single; used 2015), 273 (single 2011; deluxe-edition bonus track date unclear), 280 (single date sources conflict). Reconciler should decide.
 - [done 2026-11-26 20:32] 04-verifyB:2010s-07: 40 songs answered blind: 34 high, 6 medium, 0 low
+04-verifyB:2010s-08: medium ids 2010s-294, 303, 305, 314 are album-before-single (used earlier album year); 297 solo version Dec 2018 vs featured-artist remix 2019 (answered 2018); 310 single Aug 2012. Reconciler should decide.
+- [done 2026-11-26 20:32] 04-verifyB:2010s-08: 40 songs answered blind: 34 high, 6 medium, 0 low

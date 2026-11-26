@@ -146,3 +146,5 @@ Correction: 04-verifyA:1980s-11 actual counts are 37 high, 3 medium, 0 low (40 a
 - [done 2026-11-26 20:22] 04-verifyB:1980s-10: 40 songs answered blind: 30 high, 10 medium, 0 low
 04-verifyB:1980s-12: medium ids 1980s-444 and 1980s-451 are re-recordings (well-known 1987 / 1985 versions; earlier different recordings 1982 / 1983 exist); 1980s-450 is a 1987 B-side (hit remix 1987-88). Reconciler should decide.
 - [done 2026-11-26 20:22] 04-verifyB:1980s-12: 20 songs answered blind: 17 high, 3 medium, 0 low
+04-verifyB:1990s-02: medium ids 1990s-042, 054, 055, 066, 075 are album-before-single (album 1991, single 1992; used album year); 1990s-076 album Feb 1992 (single May 1992); 1990s-078 sources disagree on a Dec 1991 vs Jan 1992 first release (answered 1992). Reconciler should decide.
+- [done 2026-11-26 20:23] 04-verifyB:1990s-02: 40 songs answered blind: 33 high, 7 medium, 0 low

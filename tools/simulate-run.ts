@@ -15,11 +15,13 @@ import {
 // ---------------------------------------------------------------- options
 const argv = process.argv.slice(2).filter((a) => a !== '--');
 const opt = (name: string, def: string) => { const i = argv.indexOf(`--${name}`); return i >= 0 && argv[i + 1] ? argv[i + 1] : def; };
+const QUICK = argv.includes('--quick'); // 20 phones, 2 rounds per mode, one deliberate refresh (see tools/simulate.mjs)
 const OPTS = {
+  quick: QUICK,
   modes: opt('modes', 'timeline,closest_year').split(',') as Array<'timeline' | 'closest_year'>,
-  bots: Math.min(CONFIG.maxPlayers, Math.max(2, Number(opt('bots', '12')))),
-  rounds: Number(opt('rounds', '6')), // Closest Year rounds
-  target: Number(opt('target', '6')), // Timeline target cards
+  bots: Math.min(CONFIG.maxPlayers, Math.max(2, Number(opt('bots', QUICK ? String(CONFIG.maxPlayers) : '12')))),
+  rounds: Number(opt('rounds', QUICK ? '2' : '6')), // rounds per mode (Closest Year has a minimum of 5, so --quick stops both modes after this many)
+  target: Number(opt('target', QUICK ? '12' : '6')), // Timeline target cards
   seconds: Number(opt('seconds', '15')), // round timer (lobby minimum is 15)
   dwellMs: Number(opt('dwell', '1200')), // pause after a reveal before the host starts the next round
   gameTimeoutMs: Number(opt('timeout', '420000')),
@@ -135,6 +137,7 @@ class Game {
   hostRefresh = { tried: 0, ok: 0 };
   checks = { reveals: 0, rowsVerified: 0, leakChecks: 0, lockRejects: 0, lockRejectsExpected: 0, postRevealRejects: 0, lateRejects: 0, afkRounds: 0, timerEnds: 0 };
   completed = false;
+  quickStopped = false;
   roundsPlayed = 0;
   suddenRounds = 0;
   playedIds = new Set<string>();
@@ -173,7 +176,7 @@ class Bot {
     if (r.kind !== 'new') this.g.violate(`${this.tag()} first join returned ${r.kind}`);
     this.seat = r.seat;
     await this.attach();
-    this.scheduleRefresh();
+    if (!OPTS.quick) this.scheduleRefresh(); // --quick refreshes exactly one bot, from playGame
   }
 
   /** Presence + heartbeat + room watch: what the phone screen does once it has a seat. */
@@ -540,7 +543,7 @@ async function playGame(mode: Mode): Promise<Game> {
   const t0 = Date.now();
   try {
     await host.create();
-    // 12 phones join at once (a few of them with a lot of luck being first, like a real crowd).
+    // All phones join at once (a few of them with a lot of luck being first, like a real crowd).
     const skills = Array.from({ length: OPTS.bots }, (_, i) => 0.15 + (0.8 * i) / Math.max(1, OPTS.bots - 1)).sort(() => Math.random() - 0.5);
     g.bots = skills.map((s, i) => new Bot(g, i + 1, `Sim ${String.fromCharCode(65 + i)}${Math.floor(rand(10, 99))}`, s));
     await Promise.all(g.bots.map((b) => b.start(g.code)));
@@ -563,13 +566,15 @@ async function playGame(mode: Mode): Promise<Game> {
 
     await host.game.begin();
     g.bots[Math.floor(Math.random() * g.bots.length)].afkRound = 3; // one bot sits out round 3: exercises the timer path
-    const hostRefreshAt = new Set([2, Math.max(4, Math.ceil(OPTS.rounds / 2) + 1)]);
+    const hostRefreshAt = OPTS.quick ? new Set<number>() : new Set([2, Math.max(4, Math.ceil(OPTS.rounds / 2) + 1)]);
+    let quickRefreshDone = false;
     let dupDone = false;
 
     for (;;) {
       if (Date.now() - t0 > OPTS.gameTimeoutMs) { g.violate('game timed out'); break; }
       const pre = await host.session.state();
       if (gamePhase(pre) === 'over') break;
+      if (OPTS.quick && g.roundsPlayed >= OPTS.rounds) { g.quickStopped = true; break; } // quick: no need to finish the game
       const next = await host.game.nextRound();
       if (next.status === 'not-now' && next.phase === 'over') break;
       if (next.status !== 'started') { g.violate(`could not start a round (${next.status})`); break; }
@@ -587,6 +592,12 @@ async function playGame(mode: Mode): Promise<Game> {
       const waitReveal = new Promise<unknown>((resolve) => { host.revealed = resolve; });
       // Mid-round extras
       void (async () => {
+        if (OPTS.quick && !quickRefreshDone && roundNo === 1) {
+          quickRefreshDone = true;
+          await sleep(rand(2500, 4500));
+          const b = g.bots[g.bots.length - 1];
+          if (b.stable) await b.refresh('same');
+        }
         if (hostRefreshAt.has(roundNo) && next.kind === 'normal') {
           await sleep(rand(2500, 4500));
           if ((await host.session.state()).round?.status === 'open') await host.refresh().catch((e) => g.violate(`host refresh threw: ${(e as Error).message.slice(0, 80)}`));
@@ -618,6 +629,13 @@ async function playGame(mode: Mode): Promise<Game> {
     // Final checks
     const fin = await host.session.state();
     const settings = fin.room.settings as { winnerId?: string | null };
+    if (g.quickStopped) {
+      // --quick: stopped on purpose after a few rounds, so there is no winner to check.
+      if (g.roundsPlayed !== OPTS.rounds) g.violate(`played ${g.roundsPlayed} normal rounds, expected ${OPTS.rounds}`);
+      if (fin.players.length !== OPTS.bots) g.violate(`expected ${OPTS.bots} players, found ${fin.players.length}`);
+      g.completed = g.roundsPlayed === OPTS.rounds;
+      return g;
+    }
     if (fin.room.status !== 'over') g.violate('game did not reach the over state');
     const winner = fin.players.find((p) => p.id === settings.winnerId);
     if (!winner) g.violate('game over without a winner');
@@ -648,7 +666,7 @@ async function playGame(mode: Mode): Promise<Game> {
   return g;
 }
 
-/** One new phone tries a name that is already in use (twice, once with different capitals), then a 13th name when the room is full. */
+/** One new phone tries a name that is already in use (twice, once with different capitals), then one more name when the room is full. */
 async function duplicateNameAttempt(g: Game) {
   const bot = g.bots.find((b) => b.stable && b.phone && !b.refreshing);
   if (!bot) return;
@@ -663,9 +681,9 @@ async function duplicateNameAttempt(g: Game) {
     }
     if (g.bots.length >= CONFIG.maxPlayers) {
       g.dup.fullTried++;
-      const r = await joinGame(page.backend, memoryKV(), { code: g.code, name: 'Latecomer 13' });
+      const r = await joinGame(page.backend, memoryKV(), { code: g.code, name: 'Latecomer' });
       if (!r.ok && r.reason === 'full') g.dup.fullRejected++;
-      else g.violate(`a 13th player was not turned away (${r.ok ? r.kind : r.reason})`);
+      else g.violate(`a player over the limit was not turned away (${r.ok ? r.kind : r.reason})`);
     }
   } catch (e) {
     g.violate(`duplicate-name attempt threw: ${(e as Error).message.slice(0, 80)}`);

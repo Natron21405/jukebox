@@ -273,7 +273,9 @@ export function backendContract(label: string, make: () => Backend, opts: { afte
       expect(s.players[0]).toMatchObject({ score: 0, timeline: [] });
       expect(s.played_this_game).toEqual([]);
       expect(s.played_earlier).toContain(SONG_A);
-      expect(s.round).toMatchObject({ round_no: 1, game_no: 1 }); // latest round is still the old game's until a new one starts
+      expect(s.round).toBeNull(); // the old game's round, answers and locks are gone
+      expect(s.answers).toEqual([]);
+      expect(s.locked_player_ids).toEqual([]);
     });
 
     it('keeps a public view in step with changes (watchRoom)', async () => {

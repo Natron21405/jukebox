@@ -1,4 +1,4 @@
-# Party Hitster: phased build kit
+# Jukebox: phased build kit
 
 This kit builds the game by running about 30 small Claude Code sessions in a row. Each session starts fresh (so it never nears your 130k context limit), does one job, marks itself done, and the driver starts the next. Progress is saved in files, so you can stop and resume any time.
 
@@ -14,7 +14,7 @@ Other commands: `--status` (progress), `--dry-run`, `--only 04`, `--from 08a`, `
 Options (environment variables): `PARALLEL=3` (song checkers at once), `SONG_MULTIPLIER=2` (about 4,100 songs instead of 2,050), `MAX_ATTEMPTS=3`, `MAX_TURNS=200`, `MODEL_A` / `MODEL_B` (use different models for the two year verifiers), `CLAUDE_FLAGS`.
 
 ## What happens, in order
-Preflight, repo and Supabase setup, game logic with tests, song curation (8 decade sessions), two blind year verifications in chunks of 40, reconciliation and research of disagreements, Apple preview matching (runs for hours on your machine; resumable), then Supabase layer, lobby, Closest Year, Timeline, blocklist, a 12-bot simulation, and deploy to GitHub Pages. At the end, read `.build/PLAYTEST.md`.
+Preflight, repo and Supabase setup, game logic with tests, song curation (8 decade sessions), two blind year verifications in chunks of 40, reconciliation and research of disagreements, Apple preview matching (runs for hours on your machine; resumable), then Supabase layer, lobby, Closest Year, Timeline, blocklist, a bot simulation, and deploy to GitHub Pages. At the end, read `.build/PLAYTEST.md`.
 
 ## Keeping the surprise
 Song details are never printed by the tools or the agents. The files in `data/work/` and `app/public/songs.json` contain the answers, so don't open them. Don't read `.build/logs/` either.
@@ -53,7 +53,7 @@ Song pool: 2050 songs (1950s: 40, 1960s: 140, 1970s: 350, 1980s: 400, 1990s: 400
 
 ## Realtime volume (free tier)
 
-Measured by `node tools/simulate.mjs` (12 bot phones + host, every WebSocket frame counted, with bots refreshing every 6 to 16 s, which is far more churn than a real party). Supabase Free limits ([docs](https://supabase.com/docs/guides/realtime/limits)): 200 concurrent connections, 100 messages per second, 100 channel joins per second, 20 presence messages per second, 2 million messages per month. A database change counts once for each client listening to it.
+Measured by `node tools/simulate.mjs` (12 bot phones + host for the full run, 20 for `--quick`, every WebSocket frame counted, with bots refreshing every 6 to 16 s, which is far more churn than a real party). Supabase Free limits ([docs](https://supabase.com/docs/guides/realtime/limits)): 200 concurrent connections, 100 messages per second, 100 channel joins per second, 20 presence messages per second, 2 million messages per month. A database change counts once for each client listening to it.
 
 | Measure | Result (12 phones + host) | Free limit |
 | --- | --- | --- |
@@ -64,6 +64,8 @@ Measured by `node tools/simulate.mjs` (12 bot phones + host, every WebSocket fra
 | Peak in one second | 196 to 281 (a reveal: about a dozen player rows times 13 listeners), 14 of 119 active seconds above 100 | 100 per second |
 | Channel joins (all refreshes included) | about 106 to 154 per game over 50 to 70 s (about 2 per second on average) | 100 per second |
 | Monthly budget | about 650 messages per round including the refresh churn, so a 20-round game is roughly 15,000 messages and the 2 million allowance is about 130 such games a month | 2 million |
+
+**At the 20-player limit.** `node tools/simulate.mjs --quick` (20 bots, 2 rounds in each mode, one refresh) peaked at 21 connections, so the 200-connection cap is far away. Each database change is sent to every listener, so a reveal costs about 20 player rows times 21 listeners, roughly 400 messages in one second, against the nominal 100 per second. The 12-phone numbers above scale up by about 1.7 times for bursts and about 3 times for the whole game (more rows times more listeners). The same fixes apply if the burst ever gets enforced. The 2 million monthly messages stay fine (a 20-player game is a few tens of thousands).
 
 Reading: connections, joins and the monthly allowance have a lot of headroom. The one number above its nominal limit is the burst at each reveal. No bot was disconnected and no update was lost in 2 runs of 2 games, but if Supabase ever starts enforcing 100 per second on a free project, the cheapest fixes are (1) phones stop listening to the `players` table and read their own row through `get_my_state`, and (2) the host writes all players in one statement and the scoreboard is rebuilt from the reveal payload. Not done now, to keep the app small.
 
@@ -122,3 +124,7 @@ Each architecture decision and the reason for it. Add to this list as phases mak
 - **Bot simulation runs the real net and game layers through vite-node, not a browser (`tools/simulate.mjs` + `tools/simulate-run.ts`).** It uses the same Supabase calls and the same host and phone controllers as the screens, against the real project with throwaway rooms that are deleted at the end (also on Ctrl-C). A killed "page" simulates a closed tab (no goodbye), and a graceful stop simulates moving to another device. The checks re-derive scores and placements from the answers the bots were told were saved, so they do not trust the app's own output. It prints counts and timings only; violations name round and bot numbers, never song fields.
 - **A goodbye is not undone by stale presence (migration `20261126220000_goodbye_stays_away.sql`).** The simulation found that a phone saying goodbye was marked connected again within a second by the host's presence mirror, so a player moving to a new device got "name taken" for up to about 25 s. Now `seat_ping(false)` back-dates `last_seen`, and `host_set_connected` only marks a seat connected from presence if it was heard from in the last 10 minutes. A returning phone always sends a heartbeat or rejoins first, so real reconnects are unaffected.
 - **Deploy: GitHub Actions to Pages, config in repository variables, tests gate the build.** The workflow runs `npm test` before `npm run build`, so a failing test stops a deploy. The Supabase URL and publishable key are repository *variables* (set by `tools/set-pages-vars.mjs`, never the database URL), because they end up in the public JavaScript anyway. `songs.json` is committed and served as a static file next to the app, as accepted earlier for a public repo; the song details stay out of every log and note.
+- **Play Again starts clean (migration `20261127110000_new_game_clears_results.sql`).** Root cause: Play Again reset only scores and timelines, so the old game's last round (with its reveal, answers and locks) stayed the "latest round" and `room.settings` kept `winnerId`, so every screen that reads those showed the previous game's results until a new round replaced them. Fix: `host_new_game` (and the fake backend) delete the room's rounds, which cascades to answers, locks and secrets, and strip the result keys from settings; phones also drop a stale round when `game_no` goes up. Players keep their seats and names, and the played-songs history and blocklist carry over, so songs do not repeat.
+- **Repeat years stack on a timeline.** Cards with the same year show as one pile with an x2 or x3 badge. Gaps go before and after a pile, never through it, and every card still counts toward the card target.
+- **One top-5 leaderboard on the answer screen** (`leaderboardSize` in config), the same on host and phones, replacing the separate lists. Phones also show "You are Nth of M" for a player outside the top 5.
+- **Up to 20 players (migration `20261127100000_max_players_20.sql`).** The limit lives in `CONFIG.maxPlayers` and the database check. The lobby uses two columns, and three on very wide screens. The free-tier Realtime numbers are in the section above.

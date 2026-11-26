@@ -1,10 +1,12 @@
 #!/usr/bin/env node
-// Bot simulation against the real Supabase project: a host plus 12 bot phones play a full game in each mode, with
+// Bot simulation against the real Supabase project: a host plus 12 bot phones (up to the player limit) play a full game in each mode, with
 // refreshes, rejoins, a duplicate-name attempt and host refreshes. Prints counts and timings only (never song details).
 //
 //   node tools/simulate.mjs                       both modes, 12 bots
 //   node tools/simulate.mjs --modes timeline      one mode
 //   node tools/simulate.mjs --bots 10 --rounds 8 --target 6 --seconds 15
+//   node tools/simulate.mjs --quick                20 bots, 2 Timeline + 2 Closest Year rounds, one refresh and rejoin
+//                                                  (add --bots 20 --rounds 2 to spell it out; both are the --quick defaults)
 //
 // The game code itself (app/src) is run through vite-node, so the simulation uses the same net and game layers as the
 // real screens, just without a browser. Throwaway rooms are deleted at the end (and on Ctrl-C).

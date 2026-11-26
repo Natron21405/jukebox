@@ -15,8 +15,12 @@ const newer = (a: RoundRow, b: RoundRow) => a.game_no > b.game_no || (a.game_no 
 /** Pure: fold one realtime change into the state. Unknown or stale rows are ignored. */
 export function applyChange(s: PublicRoomState, c: Change): PublicRoomState {
   switch (c.table) {
-    case 'rooms':
-      return c.row.id === s.room.id && c.event !== 'DELETE' ? { ...s, room: c.row } : s;
+    case 'rooms': {
+      if (c.row.id !== s.room.id || c.event === 'DELETE') return s;
+      // A new game (Play Again) makes the old game's round stale, even if its DELETE never reaches us.
+      const stale = s.round !== null && s.round.game_no < c.row.game_no;
+      return { ...s, room: c.row, round: stale ? null : s.round, locked: stale ? [] : s.locked };
+    }
     case 'players': {
       if (c.row.room_id !== undefined && c.row.room_id !== s.room.id) return s;
       const rest = s.players.filter((p) => p.id !== c.row.id);

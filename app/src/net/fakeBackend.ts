@@ -330,6 +330,14 @@ export function createFakeBackend(start = Date.UTC(2026, 0, 1)): FakeBackend {
     },
     async hostNewGame(roomId, token) {
       const room = host(roomId, token);
+      // A new game leaves no results behind: rounds (with their answers and locks) go, result keys leave the settings.
+      for (const r of roomRounds(roomId)) {
+        rounds.delete(r.row.id);
+        for (let i = answers.length - 1; i >= 0; i--) if (answers[i].round_id === r.row.id) answers.splice(i, 1);
+        for (let i = locks.length - 1; i >= 0; i--) if (locks[i].round_id === r.row.id) locks.splice(i, 1);
+        emit(roomId, { table: 'rounds', event: 'DELETE', row: clone(r.row) });
+      }
+      for (const k of ['roundsPlayed', 'suddenDeath', 'winnerId', 'decidedBy']) delete room.row.settings[k];
       room.row.game_no += 1; room.row.round_no = 0; room.row.status = 'lobby';
       for (const p of roomPlayers(roomId)) setPlayer(p, { score: 0, artist_hits: 0, timeline: [] });
       touch(room);

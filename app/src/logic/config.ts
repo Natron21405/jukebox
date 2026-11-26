@@ -1,7 +1,9 @@
 // Every tunable number for the game lives here. Pure data, no imports.
 
 export const CONFIG = {
-  maxPlayers: 12,
+  maxPlayers: 20,
+  /** Rows on the host answer-screen leaderboard. */
+  leaderboardSize: 5,
   maxNameLength: 20,
   roundSeconds: 40,
 

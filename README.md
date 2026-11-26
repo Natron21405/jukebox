@@ -44,6 +44,11 @@ Repo layout: `app/` (web app, Vite + TypeScript), `supabase/migrations/` (SQL), 
 
 Secrets live in the root `.env` (git-ignored). Only `SUPABASE_URL` and `SUPABASE_PUBLISHABLE_KEY` go to the browser (as `VITE_*` variables in `app/.env` or GitHub Actions secrets). `SUPABASE_DB_URL` is used locally only, to apply migrations.
 
+## Song pool
+
+Song pool: 2050 songs (1950s: 40, 1960s: 140, 1970s: 350, 1980s: 400, 1990s: 400, 2000s: 350, 2010s: 300, 2020s: 70). Built by `node tools/finalize-songs.mjs` from the verified songs and the resolved Apple preview links; only songs with a working preview are kept, non-extra songs first, then extras, up to each decade target.
+
+
 # Decisions
 
 Each architecture decision and the reason for it. Add to this list as phases make more.

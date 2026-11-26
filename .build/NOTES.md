@@ -36,3 +36,4 @@ Keep this file short. Newest information wins.
 - [done 2026-11-26 19:53] 03-curate-2020s: 81 songs curated for 2020s (70 base, 11 extra), checker passes
 - [done 2026-11-26 19:54] 04-verifyA:1960s-01: 40 songs answered blind: 37 high, 3 medium, 0 low
 - [done 2026-11-26 19:54] 04-verifyA:1950s-02: 6 of 6 songs answered: 5 high, 0 medium, 1 low
+- [done 2026-11-26 19:54] 04-verifyA:1950s-01: 40 songs answered blind: 38 high, 2 medium, 0 low

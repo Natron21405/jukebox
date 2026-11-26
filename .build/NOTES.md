@@ -37,3 +37,4 @@ Keep this file short. Newest information wins.
 - [done 2026-11-26 19:54] 04-verifyA:1960s-01: 40 songs answered blind: 37 high, 3 medium, 0 low
 - [done 2026-11-26 19:54] 04-verifyA:1950s-02: 6 of 6 songs answered: 5 high, 0 medium, 1 low
 - [done 2026-11-26 19:54] 04-verifyA:1950s-01: 40 songs answered blind: 38 high, 2 medium, 0 low
+- [done 2026-11-26 19:54] 04-verifyA:1960s-02: 40 songs answered blind: 40 high, 0 medium, 0 low

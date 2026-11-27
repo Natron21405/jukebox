@@ -239,6 +239,11 @@ export async function mountHost(root: HTMLElement, deps: HostDeps): Promise<Host
   show(root, h('main', { class: 'screen host center' }, h('p', { class: 'lead' }, 'Loading…')));
   try {
     const resumed = await resumeHost(backend, kv);
+    if (resumed && resumed.state.room.status === 'over') {
+      // Opening the host page after a finished game must not land on that game's winner screen: start the same room fresh
+      // (same code, players keep their seats). If this fails we still open the room, and Play Again is there.
+      try { await new HostSession(backend, resumed.creds).newGame(); } catch { /* fall through */ }
+    }
     if (resumed) await open(resumed.creds); else renderCreate();
   } catch {
     renderCreate('Could not reach the game server.', true);

@@ -151,6 +151,30 @@ describe('Play Again, host and phones (UI level, fake network)', () => {
     expectFresh(hostRoot, [again]);
   });
 
+  it('opening the host page after a finished game shows a fresh game, not the old winner screen', async () => {
+    const backend = createFakeBackend(Date.now());
+    const { hostRoot, phones, audio, remountHost, code } = await setup(backend);
+    q(hostRoot, '[data-mode=closest_year]')!.click();
+    await until(() => q(hostRoot, '[data-mode=closest_year]')!.classList.contains('on'), 'mode switched');
+    await until(() => !(q<HTMLButtonElement>(hostRoot, '[data-action=start]')!.disabled), 'start enabled');
+    const rounds = Number(q(hostRoot, '[data-setting=rounds] .stepper-value')!.textContent);
+    q(hostRoot, '[data-action=start]')!.click();
+    await until(() => stage(hostRoot) === 'between', 'host between rounds');
+    await playClosestYearGame({ hostRoot, phones, audio, rounds, label: 'finished game' });
+
+    // The host closes the tab and opens the host page again (same browser storage, same room).
+    await remountHost();
+    await until(() => !!q(hostRoot, '[data-action=start]'), 'host page opens on a fresh lobby');
+    expect(q(hostRoot, '[data-room-code]')!.getAttribute('data-room-code')).toBe(code); // same room, players keep their seats
+    expect(hostRoot.querySelectorAll('[data-player]').length).toBe(3);
+    for (const sel of ['[data-winner]', '[data-answer-year]', '.reveal-row', '.lb-row', '[data-action=play-again]']) {
+      expect(q(hostRoot, sel), `host still shows ${sel}`).toBeNull();
+    }
+    expect(hostRoot.textContent).not.toContain('Zanzibar');
+    await until(() => phones.every((p) => stage(p) === 'waiting'), 'phones leave the old results');
+    for (const p of phones) expect(q(p, '[data-winner]')).toBeNull();
+  });
+
   it('Timeline: after Play Again the host and every phone show a fresh game, and it can be played again', async () => {
     const backend = createFakeBackend(Date.now());
     const { hostRoot, phones, audio } = await setup(backend);

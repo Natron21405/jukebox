@@ -35,7 +35,10 @@ function fakePlayer() {
 
 const NAMES = ['Ana', 'Ben', 'Cy'];
 
-async function playClosestYearGame({ hostRoot, phones, audio, rounds, label }: { hostRoot: HTMLElement; phones: HTMLElement[]; audio: { played: string[] }; rounds: number; label: string }) {
+type Play = { hostRoot: HTMLElement; phones: HTMLElement[]; audio: { played: string[] }; rounds: number; label: string };
+
+/** Every normal round, up to and including the last reveal (the host is on the reveal screen afterwards). */
+async function playRounds({ hostRoot, phones, audio, rounds, label }: Play) {
   for (let r = 1; r <= rounds; r++) {
     const before = audio.played.length;
     q(hostRoot, '[data-action=next]')!.click();
@@ -48,6 +51,11 @@ async function playClosestYearGame({ hostRoot, phones, audio, rounds, label }: {
     await until(() => stage(hostRoot) === 'reveal', `${label} round ${r} host reveal`);
     await until(() => phones.every((p) => stage(p) === 'result'), `${label} round ${r} phone results`);
   }
+}
+
+async function playClosestYearGame(play: Play) {
+  const { hostRoot, phones, audio, label } = play;
+  await playRounds(play);
   // Last reveal: "Final results", then the winner screen (a tie goes to sudden death, so keep playing those).
   for (let guard = 0; guard < 6 && stage(hostRoot) !== 'over'; guard++) {
     const btn = q(hostRoot, '[data-action=next]')!;
@@ -241,22 +249,31 @@ describe('Play Again survives a bad network (UI level)', () => {
   /** A backend with switches: silence realtime, fail reads, or hang one kind of call. */
   function flaky() {
     const inner = createFakeBackend(Date.now());
-    const sw = { mute: false, failReads: 0, hang: '' as '' | 'hostNewGame' };
+    const sw = { mute: false, failReads: 0, hang: '' as '' | 'hostNewGame', failOver: false, blocked: 0 };
     const b: Backend = {
       ...inner,
       subscribe: (roomId, onChange) => inner.subscribe(roomId, (c) => { if (!sw.mute) onChange(c); }),
       hostGetState: async (...a) => { if (sw.failReads > 0) { sw.failReads--; throw new Error('offline'); } return inner.hostGetState(...a); },
       getMyState: async (...a) => { if (sw.failReads > 0) { sw.failReads--; throw new Error('offline'); } return inner.getMyState(...a); },
+      hostUpdateRoom: async (id, tok, patch) => {
+        if (sw.failOver && patch.status === 'over') { sw.blocked++; throw new Error('offline'); } // the winner is never recorded
+        return inner.hostUpdateRoom(id, tok, patch);
+      },
       hostNewGame: (...a) => (sw.hang === 'hostNewGame' ? new Promise<never>(() => undefined) : inner.hostNewGame(...a)),
     };
     return { b, sw };
   }
 
-  async function finishedGame(b: Backend) {
+  async function lobbyGame(b: Backend) {
     const audio = fakePlayer();
     const hostRoot = root();
     const kv = memoryKV();
-    apps.push(await mountHost(hostRoot, { backend: b, kv, pageUrl: () => 'https://example.test/jukebox/', loadPool: async () => POOL, player: audio.p, rng: () => 0.5 }));
+    const mountOne = async () => {
+      const h = await mountHost(hostRoot, { backend: b, kv, pageUrl: () => 'https://example.test/jukebox/', loadPool: async () => POOL, player: audio.p, rng: () => 0.5 });
+      apps.push(h);
+      return h;
+    };
+    await mountOne();
     q(hostRoot, '[data-action=create]')!.click();
     await until(() => !!q(hostRoot, '[data-room-code]'), 'room code');
     const code = q(hostRoot, '[data-room-code]')!.getAttribute('data-room-code')!;
@@ -277,8 +294,13 @@ describe('Play Again survives a bad network (UI level)', () => {
     const rounds = Number(q(hostRoot, '[data-setting=rounds] .stepper-value')!.textContent);
     q(hostRoot, '[data-action=start]')!.click();
     await until(() => stage(hostRoot) === 'between', 'host between rounds');
-    await playClosestYearGame({ hostRoot, phones, audio, rounds, label: 'game 1' });
-    return { hostRoot, phones };
+    return { hostRoot, phones, audio, rounds, remountHost: mountOne };
+  }
+
+  async function finishedGame(b: Backend) {
+    const g = await lobbyGame(b);
+    await playClosestYearGame({ ...g, label: 'game 1' });
+    return { hostRoot: g.hostRoot, phones: g.phones };
   }
 
   const fresh = (hostRoot: HTMLElement, phones: HTMLElement[]) =>
@@ -316,5 +338,54 @@ describe('Play Again survives a bad network (UI level)', () => {
     sw.hang = '';
     q(hostRoot, '[data-action=play-again]')!.click();
     await until(() => fresh(hostRoot, phones), 'second try works');
+  });
+  // The reveal and the room's outcome are two writes. If the second never lands, the host sits on a "winner" reveal while the
+  // room is still playing, and "Final results" used to do nothing at all.
+  describe('the winner was revealed but never recorded', () => {
+    async function stuck() {
+      CONFIG.net.retrySeconds = 60; // keep the background retry out of the way: these tests drive the recovery themselves
+      const { b, sw } = flaky();
+      const g = await lobbyGame(b);
+      sw.failOver = true;
+      await playRounds({ ...g, label: 'stuck game' });
+      await until(() => q(g.hostRoot, '[data-action=next]')?.textContent === 'Final results', 'final reveal on the host');
+      expect(sw.blocked).toBeGreaterThan(0); // the room really was left playing
+      return { ...g, b, sw };
+    }
+    it('"Final results" repairs the room and shows the winner (it used to do nothing)', async () => {
+      const { hostRoot, phones, sw } = await stuck();
+      sw.failOver = false; // the network is back
+      q(hostRoot, '[data-action=next]')!.click();
+      await until(() => stage(hostRoot) === 'over', 'winner screen after Final results');
+      expect(q(hostRoot, '[data-winner]')).not.toBeNull();
+      expect(q(hostRoot, '[data-action=play-again]')).not.toBeNull();
+      await until(() => phones.every((p) => q(p, '[data-winner]') !== null), 'winner on phones');
+    });
+
+    it('opening the host page again repairs it on its own, and Play Again then works', async () => {
+      const { hostRoot, phones, sw, remountHost } = await stuck();
+      sw.failOver = false;
+      await remountHost();
+      // the phones only show a winner once the room itself is over, so this proves the page repaired the room by itself
+      await until(() => phones.every((p) => q(p, '[data-winner]') !== null), 'winner on phones');
+      // the page is not frozen: the winner screen's own button works
+      await until(() => q(hostRoot, '[data-action=next]')?.textContent === 'Final results', 'Final results offered');
+      q(hostRoot, '[data-action=next]')!.click();
+      await until(() => stage(hostRoot) === 'over', 'winner screen');
+      await until(() => !!q(hostRoot, '[data-action=play-again]'), 'Play Again offered');
+      q(hostRoot, '[data-action=play-again]')!.click();
+      await until(() => fresh(hostRoot, phones), 'a fresh game after Play Again');
+    });
+
+    it('still offline: the button says so instead of doing nothing, and works once the network is back', async () => {
+      CONFIG.net.actionTimeoutSeconds = 0.5;
+      const { hostRoot, sw } = await stuck();
+      q(hostRoot, '[data-action=next]')!.click();
+      await until(() => (hostRoot.textContent ?? '').includes('That did not work'), 'a notice while offline');
+      expect(stage(hostRoot)).toBe('reveal');
+      sw.failOver = false;
+      q(hostRoot, '[data-action=next]')!.click();
+      await until(() => stage(hostRoot) === 'over', 'winner screen once the network is back');
+    });
   });
 });

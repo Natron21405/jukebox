@@ -268,7 +268,7 @@ export function createPhoneTimeline(root: HTMLElement, deps: PhoneGameDeps): Pho
     let stage: string = view.stage;
     if (view.over && view.stage !== 'result') stage = 'over';
     if (localLock && round && localLock.roundId === round.id && stage === 'answer') stage = 'locked';
-    const key = `${stage}|${round?.id ?? ''}|${view.timeline.length}|${stage === 'locked' ? round?.status : ''}|${view.mine ? `${view.mine.correct}${view.mine.artistHit}` : ''}`;
+    const key = `${stage}|${view.over}|${round?.id ?? ''}|${view.timeline.length}|${stage === 'locked' ? round?.status : ''}|${view.mine ? `${view.mine.correct}${view.mine.artistHit}` : ''}`;
     if (key === drawn) return;
     drawn = key;
     clearTimers();

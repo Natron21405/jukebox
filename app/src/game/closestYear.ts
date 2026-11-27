@@ -32,6 +32,24 @@ export function winnerOf(settings: Record<string, unknown>): { winnerId: string;
   return typeof settings.winnerId === 'string' ? { winnerId: settings.winnerId, decidedBy: String(settings.decidedBy ?? '') } : null;
 }
 const roundsPlayedOf = (settings: Record<string, unknown>) => (typeof settings.roundsPlayed === 'number' ? settings.roundsPlayed : 0);
+/**
+ * The reveal and the room's outcome (status, winner, sudden-death list) are two separate writes. If the second one never
+ * landed (a dropped request, a closed tab), the screen sits on a reveal that says "winner" while the room is still playing.
+ * Returns what to write when the room does not match the reveal it is showing, or null when they agree.
+ */
+export function outcomeMismatch(s: Pick<HostState, 'room' | 'round'>): { roundsPlayed: number; outcome: Outcome } | null {
+  const r = s.round;
+  if (gamePhase(s) !== 'reveal' || !r || r.status !== 'revealed' || !r.reveal) return null;
+  const rv = r.reveal as { outcome?: Outcome; roundsPlayed?: number };
+  const o = rv.outcome;
+  if (!o || typeof rv.roundsPlayed !== 'number') return null;
+  const st = s.room.settings;
+  const agrees = s.room.status === (o.status === 'winner' ? 'over' : 'playing')
+    && (winnerOf(st)?.winnerId ?? null) === (o.status === 'winner' ? o.winnerId : null)
+    && JSON.stringify(suddenDeathContenders(st)) === JSON.stringify(o.status === 'suddenDeath' ? o.contenders : [])
+    && roundsPlayedOf(st) === rv.roundsPlayed;
+  return agrees ? null : { roundsPlayed: rv.roundsPlayed, outcome: o };
+}
 
 export type NextRound =
   | { status: 'started'; roundId: string; roundNo: number; kind: 'normal' | 'sudden_death'; songId: string }
@@ -204,6 +222,20 @@ export class ClosestYearGame {
     }
     if (!isClosestYearOver(roundsPlayed, roundsTotal)) return { status: 'continue' };
     return closestYearOutcome(players.map((p) => ({ id: p.id, score: p.score })));
+  }
+
+  /**
+   * The reveal and the room's outcome (status, winner, sudden-death list) are two separate writes. If the second one never
+   * landed (a dropped request, a closed tab), the screen would sit on a reveal that says "winner" while the room is still
+   * playing. This writes the outcome the reveal already holds. Safe to call any time; does nothing when they agree.
+   */
+  repairOutcome(): Promise<boolean> {
+    return this.serial(async () => {
+      const fix = outcomeMismatch(await this.d.session.state());
+      if (!fix) return false;
+      await this.saveOutcome(fix.roundsPlayed, fix.outcome);
+      return true;
+    });
   }
 
   private async saveOutcome(roundsPlayed: number, o: Outcome): Promise<void> {

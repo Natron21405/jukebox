@@ -111,7 +111,7 @@ export function createHostGame(root: HTMLElement, deps: HostGameDeps): HostGame 
     const key = `${s.room.status}|${s.room.game_no}|${s.round?.id ?? ''}|${s.round?.status ?? ''}|${s.locked.length}|${s.players.map((p) => `${p.score}${p.connected ? 1 : 0}`).join(',')}`;
     if (key === lastKey) return;
     lastKey = key;
-    void ensureGame().then(async () => { await reload(); startTick(); void autoEnd(); }).catch(() => { notice = 'The song list could not be loaded. Trying again…'; draw(); retryLater(); });
+    void ensureGame().then(async () => { await reload(); startTick(); void autoEnd(); void repair(); }).catch(() => { notice = 'The song list could not be loaded. Trying again…'; draw(); retryLater(); });
   }
 
   const guarded = async <T>(fn: () => Promise<T>): Promise<T | undefined> => {
@@ -121,6 +121,11 @@ export function createHostGame(root: HTMLElement, deps: HostGameDeps): HostGame 
   };
 
   // ------------------------------------------------------------------ timers
+  /** The reveal says winner (or sudden death) but the room never got the matching outcome: write it so the game can finish. */
+  async function repair() {
+    if (!game || stopped) return;
+    try { if (await game.repairOutcome()) await reload(); } catch { retryLater(); }
+  }
   async function autoEnd() {
     if (!game || stopped) return;
     try { if (await game.checkAutoEnd()) await reload(); } catch { /* try again on the next tick */ }
@@ -156,6 +161,8 @@ export function createHostGame(root: HTMLElement, deps: HostGameDeps): HostGame 
   const resetPlayed = () => guarded(async () => { await session.resetPlayed(); });
   const unblockSong = () => guarded(async () => { if (hs?.round) await session.unblockSong(hs.round.song_id); });
   const blockSong = () => guarded(async () => { if (hs?.round) await session.blockSong(hs.round.song_id); });
+  // "Final results": make sure the room really is over (repairing a missing outcome), then show the winner screen.
+  const finish = () => guarded(async () => { await (await ensureGame()).repairOutcome(); ackOver = true; });
   const again = () => guarded(async () => { await (await ensureGame()).playAgain(); ackOver = false; }); // only after it worked, so a failed try stays on the winner screen
 
   async function start() {
@@ -283,7 +290,7 @@ export function createHostGame(root: HTMLElement, deps: HostGameDeps): HostGame 
         h('ul', { class: 'reveal-rows' }, ...checks.map((r) => checkLine(r, byId.get(r.playerId)?.name ?? '?')))),
       h('div', { class: 'row-actions' },
         h('button', { class: 'btn primary huge', 'data-action': 'next', disabled: busy ? true : null,
-          onclick: () => { if (o.status === 'winner') { ackOver = true; draw(); } else void next(); } }, label),
+          onclick: () => { if (o.status === 'winner') void finish(); else void next(); } }, label),
         removeSongControl(!!hs?.round && s.blocked.includes(hs.round.song_id), () => void blockSong(), () => void unblockSong())));
   }
 

@@ -269,7 +269,7 @@ export function createPhoneGame(root: HTMLElement, deps: PhoneGameDeps): PhoneGa
     if (view.over && view.stage !== 'result') stage = 'over';
     if (view.over && view.stage === 'result') stage = 'result';
     if (locallyLocked) stage = 'locked';
-    const key = `${stage}|${round?.id ?? ''}|${view.score}|${stage === 'locked' ? round?.status : ''}|${view.mine ? view.mine.total : ''}`;
+    const key = `${stage}|${view.over}|${round?.id ?? ''}|${view.score}|${stage === 'locked' ? round?.status : ''}|${view.mine ? view.mine.total : ''}`;
     if (key === drawn) return;
     drawn = key;
     clearTimers();

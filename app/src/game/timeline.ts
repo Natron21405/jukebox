@@ -4,7 +4,7 @@ import {
   type Card, type GameSong, type LobbySettings, type Outcome, type Rng, type TimelineRevealPayload,
 } from '../logic';
 import type { AnswerRow, HostSession, HostState, PlayerResult, PlayerRow } from '../net';
-import { gamePhase, suddenDeathContenders, type NextRound } from './closestYear';
+import { gamePhase, outcomeMismatch, suddenDeathContenders, type NextRound } from './closestYear';
 
 /** What the Timeline reveal carries on top of the scored rows: where the game stands now. Public only after the reveal. */
 export interface TimelineReveal extends TimelineRevealPayload {
@@ -191,6 +191,20 @@ export class TimelineGame {
       return resolveSuddenDeathRound(reveal.rows.map((x) => ({ id: x.playerId, year: x.year })), reveal.song.year);
     }
     return timelineOutcome(players.map((p) => ({ id: p.id, cards: p.timeline.length, artistHits: p.artist_hits })), target);
+  }
+
+  /**
+   * The reveal and the room's outcome (status, winner, sudden-death list) are two separate writes. If the second one never
+   * landed (a dropped request, a closed tab), the screen would sit on a reveal that says "winner" while the room is still
+   * playing. This writes the outcome the reveal already holds. Safe to call any time; does nothing when they agree.
+   */
+  repairOutcome(): Promise<boolean> {
+    return this.serial(async () => {
+      const fix = outcomeMismatch(await this.d.session.state());
+      if (!fix) return false;
+      await this.saveOutcome(fix.roundsPlayed, fix.outcome);
+      return true;
+    });
   }
 
   private async saveOutcome(roundsPlayed: number, o: Outcome): Promise<void> {

@@ -169,4 +169,37 @@ describe('song history screens (host + 2 phones, fake network)', () => {
     expect(q(hostRoot, '[data-action=reset-played]')).toBeNull();
     expect(q(hostRoot, '[data-exhausted]')!.textContent).toMatch(/blocked/i);
   });
+
+  it('Song settings: choose decades, the last one stays on, and the game only plays songs from them', async () => {
+    const { hostRoot, db } = await lobby(makePool(10)); // years 1960, 1965 ... 2005: two songs in each of five decades
+    q(hostRoot, '[data-action=open-songs]')!.click();
+    await until(() => q(hostRoot, '[data-decade]') !== null && q(hostRoot, '[data-available]')!.getAttribute('data-available') === '10', 'decades shown');
+    const chip = (d: number) => q(hostRoot, `[data-decade="${d}"]`)!;
+    const on = (d: number) => chip(d).getAttribute('aria-pressed') === 'true';
+    expect(on(1950) && on(2020)).toBe(true);
+
+    for (const d of [1950, 1960, 1990, 2000, 2010, 2020]) {
+      chip(d).click();
+      await until(() => !on(d), `decade ${d} off`);
+    }
+    await until(() => q(hostRoot, '[data-available]')!.getAttribute('data-available') === '4', 'count follows decades'); // 1970s and 1980s: 2 songs each
+    expect([1970, 1980].every(on)).toBe(true);
+    chip(1980).click();
+    await until(() => !on(1980), 'decade 1980 off');
+    expect(q(hostRoot, '[data-available]')!.getAttribute('data-available')).toBe('2');
+    chip(1970).click(); // the last decade cannot be turned off
+    await wait(40);
+    expect(on(1970)).toBe(true);
+    expect((await db.state()).room.settings.decades).toEqual([1970]);
+
+    q(hostRoot, '[data-action=songs-back]')!.click();
+    await inLobby(hostRoot);
+    q(hostRoot, '[data-mode=closest_year]')!.click();
+    await startGame(hostRoot);
+    q(hostRoot, '[data-action=next]')!.click();
+    await until(() => q(hostRoot, '[data-stage=listening]') !== null, 'listening');
+    const played = (await db.state()).played_this_game;
+    expect(played.length).toBe(1);
+    expect(['test-003', 'test-004']).toContain(played[0]); // the two 1970s songs (1970, 1975)
+  });
 });

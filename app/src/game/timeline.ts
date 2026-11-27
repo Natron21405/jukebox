@@ -1,5 +1,5 @@
 import {
-  applyTimelineOverride, buildTimelineReveal, chooseNextSong, dealStartingHands, everyoneLocked, normalizeSettings,
+  applyTimelineOverride, buildTimelineReveal, chooseNextSong, chosenDecades, dealStartingHands, everyoneLocked, normalizeSettings,
   resolveSuddenDeathRound, startingPairKey, timelineOutcome, timerExpired,
   type Card, type GameSong, type LobbySettings, type Outcome, type Rng, type TimelineRevealPayload,
 } from '../logic';
@@ -85,7 +85,7 @@ export class TimelineGame {
       await this.dealMissing(s.players); // late joiners get their two cards before the song plays
       const picked = chooseNextSong(
         this.d.pool,
-        { playedThisGame: s.played_this_game, playedEarlier: s.played_earlier, blocked: s.blocked, yearRange: this.d.yearRange },
+        { playedThisGame: s.played_this_game, playedEarlier: s.played_earlier, blocked: s.blocked, yearRange: this.d.yearRange, decades: chosenDecades(s.room.settings) },
         this.d.rng,
       );
       if (picked.status === 'exhausted') return { status: 'exhausted', resetWouldHelp: picked.resetWouldHelp };

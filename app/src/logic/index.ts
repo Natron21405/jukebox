@@ -14,3 +14,4 @@ export * from './timelineRound';
 export * from './slotPicker';
 export * from './songLibrary';
 export * from './leaderboard';
+export * from './decades';

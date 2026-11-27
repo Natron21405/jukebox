@@ -1,3 +1,4 @@
+import { decadeOf } from './decades';
 import { randomIndex, type Rng } from './rng';
 
 export interface PoolSong {
@@ -14,6 +15,8 @@ export interface SelectionFilters {
   blocked?: Iterable<string>;
   /** Host year-range setting, inclusive. */
   yearRange?: { min: number; max: number };
+  /** Decade start years to draw from (1980 means 1980-1989). Missing means every decade. */
+  decades?: readonly number[];
 }
 
 export type SelectionResult<T> =
@@ -27,8 +30,11 @@ export type SelectionResult<T> =
 function eligible<T extends PoolSong>(pool: readonly T[], f: SelectionFilters, includeEarlier: boolean): T[] {
   const skip = new Set<string>([...f.playedThisGame, ...(f.blocked ?? [])]);
   if (includeEarlier) for (const id of f.playedEarlier ?? []) skip.add(id);
+  const decades = f.decades ? new Set(f.decades) : null;
   return pool.filter(
-    (s) => !skip.has(s.id) && (!f.yearRange || (s.year >= f.yearRange.min && s.year <= f.yearRange.max)),
+    (s) => !skip.has(s.id)
+      && (!f.yearRange || (s.year >= f.yearRange.min && s.year <= f.yearRange.max))
+      && (!decades || decades.has(decadeOf(s.year))),
   );
 }
 

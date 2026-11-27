@@ -1,4 +1,7 @@
-import { blockedEntries, summarizePool, type GameSong } from '../logic';
+import {
+  ALL_DECADES, blockedEntries, chosenDecades, countByDecade, decadeLabel, decadeOf, summarizePool, toggleDecade,
+  type GameSong,
+} from '../logic';
 import type { HostSession, HostState } from '../net';
 import { h, show } from './dom';
 import { RESET_EXPLAIN, confirmButton } from './songTools';
@@ -34,14 +37,34 @@ export function openSongsScreen(root: HTMLElement, o: {
     if (!hs) { show(root, h('main', { class: 'screen host center' }, h('p', { class: 'lead' }, notice || 'Loading songs…'),
       notice && h('button', { class: 'btn ghost', 'data-action': 'songs-back', onclick: o.onBack }, 'Back'))); return; }
     const earlier = hs.played_earlier;
-    const sum = summarizePool(pool, { blocked: hs.blocked, played: [...earlier, ...hs.played_this_game] });
+    const chosen = chosenDecades(hs.room.settings);
+    const inChosen = pool.filter((s) => chosen.includes(decadeOf(s.year)));
+    const sum = summarizePool(inChosen, { blocked: hs.blocked, played: [...earlier, ...hs.played_this_game] });
+    // Per decade: songs that could still be picked there (fresh and not blocked).
+    const gone = new Set([...hs.blocked, ...earlier, ...hs.played_this_game]);
+    const fresh = countByDecade(pool.filter((s) => !gone.has(s.id)));
     const entries = blockedEntries(pool, hs.blocked);
     show(root, h('main', { class: 'screen host songs', 'data-stage': 'songs' },
       h('header', { class: 'game-head' },
         h('h1', {}, 'Song settings'),
         h('button', { class: 'btn ghost', 'data-action': 'songs-back', onclick: o.onBack }, 'Back to lobby')),
+      h('section', { class: 'decades-panel' },
+        h('h2', {}, 'Decades in this game'),
+        h('div', { class: 'decade-grid', role: 'group', 'aria-label': 'Decades to include' },
+          ...ALL_DECADES.map((d) => {
+            const on = chosen.includes(d);
+            const onlyOne = on && chosen.length === 1;
+            return h('button', {
+              class: `chip decade${on ? ' on' : ''}`, type: 'button', 'data-decade': String(d), 'aria-pressed': String(on),
+              'aria-label': `${decadeLabel(d)}, ${plural(fresh[d] ?? 0, 'fresh song')}${onlyOne ? ', at least one decade must stay on' : ''}`,
+              onclick: () => { if (!onlyOne) void act(() => o.session.updateRoom({ settings: { decades: toggleDecade(chosen, d) } })); },
+            }, h('span', { class: 'decade-name' }, decadeLabel(d)), h('span', { class: 'decade-count' }, String(fresh[d] ?? 0)));
+          })),
+        h('p', { class: 'hint' }, chosen.length === ALL_DECADES.length
+          ? 'All decades are on. Tap a decade to leave it out. The number is how many fresh songs it has.'
+          : 'Only the highlighted decades are used. Tap a decade to add or remove it.')),
       h('section', { class: 'songs-panel' },
-        h('p', { class: 'lead', 'data-available': String(sum.available) }, `${sum.available} of ${sum.total} songs are still fresh`),
+        h('p', { class: 'lead', 'data-available': String(sum.available) }, `${sum.available} of ${sum.total} songs in the chosen decades are still fresh`),
         h('p', { class: 'hint' }, `${plural(sum.played, 'song')} already played, ${plural(sum.blocked, 'song')} blocked.`),
         confirmButton({
           action: 'reset-played', label: 'Reset played songs', confirmLabel: 'Yes, reset played songs',

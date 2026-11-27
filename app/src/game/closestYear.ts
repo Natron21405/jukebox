@@ -1,5 +1,5 @@
 import {
-  CONFIG, applyOverride, buildReveal, chooseNextSong, closestYearOutcome, everyoneLocked, isClosestYearOver,
+  CONFIG, applyOverride, buildReveal, chooseNextSong, chosenDecades, closestYearOutcome, everyoneLocked, isClosestYearOver,
   normalizeSettings, resolveSuddenDeathRound, timerExpired,
   type GameSong, type LobbySettings, type Outcome, type RevealPayload, type Rng,
 } from '../logic';
@@ -113,7 +113,7 @@ export class ClosestYearGame {
       if (phase === 'over' || phase === 'listening' || phase === 'closed') return { status: 'not-now', phase };
       const picked = chooseNextSong(
         this.d.pool,
-        { playedThisGame: s.played_this_game, playedEarlier: s.played_earlier, blocked: s.blocked, yearRange: this.d.yearRange },
+        { playedThisGame: s.played_this_game, playedEarlier: s.played_earlier, blocked: s.blocked, yearRange: this.d.yearRange, decades: chosenDecades(s.room.settings) },
         this.d.rng,
       );
       if (picked.status === 'exhausted') return { status: 'exhausted', resetWouldHelp: picked.resetWouldHelp };

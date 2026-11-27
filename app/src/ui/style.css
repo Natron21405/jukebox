@@ -65,13 +65,18 @@ h1, h2, p { margin: 0; }
 
 .players-panel, .settings-panel, .start-panel { background: var(--panel); border-radius: var(--radius); padding: 16px; display: flex; flex-direction: column; gap: 12px; }
 .start-panel { background: transparent; padding: 0; }
-.players-panel h2 { font-size: 1.4rem; display: flex; justify-content: space-between; align-items: baseline; }
-.count { color: var(--muted); font-weight: 600; }
-.players { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; grid-template-columns: 1fr; }
-.player { display: flex; align-items: center; gap: 12px; background: var(--panel-2); border-radius: 12px; padding: 6px 8px 6px 16px; min-height: 56px; }
-.player.away { opacity: 0.6; }
-.player-name { flex: 1; font-size: 1.5rem; font-weight: 700; word-break: break-word; }
-.player-status { color: var(--muted); font-size: 0.9rem; }
+.players-panel h2 { font-size: 1.5rem; display: flex; justify-content: space-between; align-items: baseline; }
+.count { color: var(--muted); font-weight: 700; background: var(--panel-2); border-radius: 999px; padding: 2px 14px; font-size: 1.1rem; }
+.empty { padding: 24px 8px; border: 2px dashed var(--panel-2); border-radius: 14px; }
+.players { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr)); }
+.player { display: flex; align-items: center; gap: 12px; background: var(--panel-2); border-radius: 14px; padding: 8px 8px 8px 10px; min-height: 64px; min-width: 0; }
+.player.away { opacity: 0.65; }
+.avatar { position: relative; flex: none; width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; font-weight: 900; font-size: 1.3rem; color: #14121f; background: hsl(var(--hue, 330) 80% 70%); }
+.avatar .dot { position: absolute; right: -2px; bottom: -2px; width: 14px; height: 14px; border: 3px solid var(--panel-2); box-sizing: content-box; }
+.player-info { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.player-name { font-size: 1.35rem; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.player-status { color: var(--muted); font-size: 0.85rem; white-space: nowrap; }
+.btn.kick { flex: none; min-width: 44px; padding: 0 10px; white-space: nowrap; }
 .dot { width: 14px; height: 14px; border-radius: 50%; flex: none; }
 .dot.on { background: var(--good); }
 .dot.off { background: var(--muted); }
@@ -90,12 +95,8 @@ h1, h2, p { margin: 0; }
   body { font-size: 22px; }
   .screen.host.lobby { grid-template-columns: 1fr 1fr; align-items: start; }
   .join-card { grid-column: 1 / -1; }
-  .players { grid-template-columns: 1fr 1fr; }
-  .start-panel { grid-column: 1 / -1; }
-}
-/* 20 players: three columns on a big screen keeps the lobby list to about 7 rows. */
-@media (min-width: 1500px) {
-  .players { grid-template-columns: 1fr 1fr 1fr; }
+  .players-panel { grid-column: 1 / -1; }
+  .start-panel { justify-content: center; }
 }
 @media (max-width: 380px) {
   body { font-size: 17px; }

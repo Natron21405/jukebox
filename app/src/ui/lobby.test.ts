@@ -141,6 +141,22 @@ describe('lobby screens (host + phones, driven by the fake net layer)', () => {
     expect(read()).toBeLessThanOrEqual(20);
   });
 
+  it('player rows keep the name whole on one line: avatar initial, name element with a title, kick button', async () => {
+    const backend = createFakeBackend();
+    const host = await startHost(backend);
+    q(host.root, '[data-action=create]')!.click();
+    await tick();
+    const code = roomCode(host.root);
+    const ann = await startPhone(backend, memoryKV(), code);
+    await submitJoin(ann.root, code, 'Annabelle');
+    await tick();
+    const row = q(host.root, '[data-player=Annabelle]')!;
+    expect(q(row, '.player-name')!.textContent).toBe('Annabelle');
+    expect(q(row, '.player-name')!.getAttribute('title')).toBe('Annabelle');
+    expect(q(row, '.avatar')!.textContent).toBe('A');
+    expect(q(row, '[data-action=kick]')).not.toBeNull();
+  });
+
   it('kicks a player with a two-tap confirm; their phone returns to the join form and the name is free', async () => {
     const backend = createFakeBackend();
     const host = await startHost(backend);

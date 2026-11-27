@@ -247,3 +247,4 @@ Post-launch changes (2026-11-27): renamed to Jukebox; Timeline repeat years stac
 Quick sim: `node tools/simulate.mjs --quick` (20 bots, 2 rounds per mode, one refresh and rejoin, about 1 min). Closest Year has a 5-round minimum in settings, so quick stops both modes after the first 2 rounds.
 Resilience (2026-11-27): see README Decisions 'No screen may stay frozen'. Live Play Again check: tools/playagain-live.ts (vite-node, needs SIM_URL/SIM_KEY, made-up songs, deletes its room). After deploy, old open tabs reload themselves within ~2 min or on return.
 Stuck winner fix (2026-11-27): reveal and room outcome are two writes; repairOutcome() in both game classes heals a missing second write (README Decisions).
+Lobby UI (2026-11-27): player rows are avatar + name + kick in an auto-fill grid; players panel spans the full width, settings and Start sit side by side on wide screens (style.css, host.ts playerItem).

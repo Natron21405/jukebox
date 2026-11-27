@@ -115,14 +115,20 @@ export async function mountHost(root: HTMLElement, deps: HostDeps): Promise<Host
     );
   }
 
+  const nameHue = (n: string) => [...n].reduce((a, c) => (a * 31 + c.charCodeAt(0)) % 360, 7);
+  const initialOf = (n: string) => (n.trim()[0] ?? '?').toUpperCase();
+
   function playerItem(p: PlayerRow) {
     const armed = kickArmed === p.id;
     return h('li', { class: `player${p.connected ? '' : ' away'}`, 'data-player': p.name },
-      h('span', { class: `dot ${p.connected ? 'on' : 'off'}`, 'aria-hidden': 'true' }),
-      h('span', { class: 'player-name' }, p.name),
-      !p.connected && h('span', { class: 'player-status' }, 'reconnecting'),
+      h('span', { class: 'avatar', style: `--hue:${nameHue(p.name)}`, 'aria-hidden': 'true' }, initialOf(p.name),
+        h('span', { class: `dot ${p.connected ? 'on' : 'off'}` })),
+      h('span', { class: 'player-info' },
+        h('span', { class: 'player-name', title: p.name }, p.name),
+        !p.connected && h('span', { class: 'player-status' }, 'Reconnecting…'),
+      ),
       h('button', {
-        class: `btn small ${armed ? 'danger' : 'ghost'}`, 'data-action': 'kick',
+        class: `btn small kick ${armed ? 'danger' : 'ghost'}`, 'data-action': 'kick',
         'aria-label': armed ? `Tap again to remove ${p.name}` : `Remove ${p.name}`,
         onclick: () => kick(p),
       }, armed ? 'Remove?' : '✕'),

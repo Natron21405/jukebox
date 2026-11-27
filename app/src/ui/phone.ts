@@ -4,6 +4,7 @@ import {
   type Backend, type KV, type PhoneSession, type PublicRoomState, type StoredSeat,
 } from '../net';
 import { h, show } from './dom';
+import { HOME_HASH } from './route';
 import { createPhoneGame, type PhoneGame } from './phoneGame';
 import { createPhoneTimeline } from './phoneTimeline';
 
@@ -82,9 +83,10 @@ export async function mountPhone(root: HTMLElement, deps: PhoneDeps): Promise<Ph
       })();
     });
 
-    show(root, h('main', { class: 'screen phone' },
-      h('h1', { class: 'logo small' }, 'Jukebox'),
-      h('p', { class: 'lead' }, 'Join the party'),
+    show(root, h('main', { class: 'screen phone', 'data-page': 'join' },
+      h('a', { class: 'back-link', href: HOME_HASH, 'data-action': 'home' }, '← Home'),
+      h('h1', { class: 'logo small' }, 'Join a game'),
+      h('p', { class: 'lead' }, 'Type the room code from the big screen, and a name for yourself.'),
       form,
     ));
   }

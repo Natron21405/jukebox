@@ -11,7 +11,7 @@ import { createHostGame, htmlClipPlayer, type ClipPlayer, type HostGame } from '
 import { createHostTimeline } from './hostTimeline';
 import { openSongsScreen } from './hostSongs';
 import { qrElement } from './qr';
-import { joinAddressText, joinUrl } from './route';
+import { HOME_HASH, joinAddressText, joinUrl } from './route';
 
 export interface HostDeps {
   backend: Backend;
@@ -94,9 +94,10 @@ export async function mountHost(root: HTMLElement, deps: HostDeps): Promise<Host
 
   // ------------------------------------------------------------------ screens
   function renderCreate(message = '', retry = false) {
-    show(root, h('main', { class: 'screen host center' },
-      h('h1', { class: 'logo' }, 'Jukebox'),
-      h('p', { class: 'lead' }, 'A music party game. Everyone plays at once on their own phone.'),
+    show(root, h('main', { class: 'screen host center', 'data-page': 'host' },
+      h('a', { class: 'back-link', href: HOME_HASH, 'data-action': 'home' }, '← Home'),
+      h('h1', { class: 'logo' }, 'Host a game'),
+      h('p', { class: 'lead' }, 'Put this page on the big screen. You get a room code and a QR code, and everyone else joins on their phone.'),
       message && h('p', { class: 'notice', role: 'alert' }, message),
       h('button', { class: 'btn primary huge', 'data-action': 'create', onclick: () => void create() }, retry ? 'Try again' : 'Create room'),
     ));
@@ -211,7 +212,7 @@ export async function mountHost(root: HTMLElement, deps: HostDeps): Promise<Host
       session, player: deps.player ?? htmlClipPlayer(), now: deps.now, rng: deps.rng,
       loadPool: deps.loadPool ?? defaultLoadPool,
       joinStrip: () => joinStrip(creds.code, true),
-      onLobby: () => void act(() => session!.updateRoom({ status: 'lobby' })),
+      onLobby: () => void act(() => session!.newGame()), // a clean lobby: the finished game's rounds, scores and results are gone
     };
     games = { closest_year: createHostGame(root, gameDeps), timeline: createHostTimeline(root, gameDeps) };
     try {

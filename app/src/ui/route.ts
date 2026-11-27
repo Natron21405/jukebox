@@ -1,18 +1,24 @@
 import { cleanRoomCode } from '../logic';
 
-export type Route = { page: 'host' } | { page: 'phone'; code: string };
+export type Route = { page: 'home' } | { page: 'host' } | { page: 'phone'; code: string };
+
+function safeDecode(s: string): string {
+  try { return decodeURIComponent(s); } catch { return s; }
+}
 
 /**
  * Hash routing, because the site is static files on GitHub Pages (no server rewrites):
- *   #/host         the big screen
- *   #/join/ABCD    a phone, with the code filled in (this is what the QR code opens)
- *   anything else  a phone with an empty code box
+ *   (empty), #/   the home page: what the game is, and a choice between hosting and joining
+ *   #/host         the host page (the big screen)
+ *   #/join         the join page (a phone), with an empty code box
+ *   #/join/ABCD    the join page with the code filled in (this is what the QR code opens)
+ *   anything else  the home page
  */
 export function parseRoute(hash: string): Route {
   const parts = hash.replace(/^#\/?/, '').split('/').filter(Boolean);
   if (parts[0] === 'host') return { page: 'host' };
-  if (parts[0] === 'join' && parts[1]) return { page: 'phone', code: cleanRoomCode(decodeURIComponent(parts[1])) };
-  return { page: 'phone', code: '' };
+  if (parts[0] === 'join') return { page: 'phone', code: parts[1] ? cleanRoomCode(safeDecode(parts[1])) : '' };
+  return { page: 'home' };
 }
 
 /** The address a phone opens to join this room (same site and path as the host page). */
@@ -28,3 +34,8 @@ export function joinAddressText(pageUrl: string): string {
   const u = new URL(pageUrl);
   return `${u.host}${u.pathname}`.replace(/\/$/, '');
 }
+
+/** Hash links for moving between the pages. */
+export const HOME_HASH = '#/';
+export const HOST_HASH = '#/host';
+export const JOIN_HASH = '#/join';

@@ -3,7 +3,7 @@ import {
   ClosestYearGame, gamePhase, suddenDeathContenders, winnerOf, type ClosestYearReveal, type NextRound,
 } from '../game';
 import type { HostSession, HostState, PlayerRow, PublicRoomState } from '../net';
-import { h, show, withTimeout } from './dom';
+import { h, show, withTimeout, type Child } from './dom';
 import { leaderboardList, type RoundMark } from './leaderboard';
 import { exhaustedPanel, removeSongControl } from './songTools';
 
@@ -73,6 +73,8 @@ export function createHostGame(root: HTMLElement, deps: HostGameDeps): HostGame 
   let countdownEl: HTMLElement | null = null;
   let progressEl: HTMLElement | null = null;
   let loading: Promise<void> | null = null;
+  let checksOpen = false; // the artist-guess panel is rebuilt on every redraw, so remember whether the host opened it
+  let checksRound = '';
   let ackOver = false; // the host has looked at the last round's answer and moved on to the final results
 
   player.onError(() => { clipFailed = true; draw(); });
@@ -163,11 +165,13 @@ export function createHostGame(root: HTMLElement, deps: HostGameDeps): HostGame 
   const blockSong = () => guarded(async () => { if (hs?.round) await session.blockSong(hs.round.song_id); });
   // "Final results": make sure the room really is over (repairing a missing outcome), then show the winner screen.
   const finish = () => guarded(async () => { await (await ensureGame()).repairOutcome(); ackOver = true; });
-  const again = () => guarded(async () => { await (await ensureGame()).playAgain(); ackOver = false; }); // only after it worked, so a failed try stays on the winner screen
+  const again = () => guarded(async () => { await (await ensureGame()).playAgain(); ackOver = false; checksOpen = false; }); // only after it worked, so a failed try stays on the winner screen
 
+  // Start always means a brand-new game: clear the old rounds, scores and results first, so a finished game can never come back.
   async function start() {
     const g = await ensureGame();
-    await g.begin();
+    await g.playAgain();
+    ackOver = false; checksOpen = false;
     await reload();
   }
 
@@ -285,13 +289,23 @@ export function createHostGame(root: HTMLElement, deps: HostGameDeps): HostGame 
           h('p', { class: 'answer-artist' }, [...rv.song.artists, ...rv.song.featuredArtists.map((a) => `feat. ${a}`)].join(', ')))),
       leaderboardList('closestYear', board, marks),
       sudden && h('p', { class: 'hint' }, 'Sudden death does not change scores.'),
-      !sudden && checks.length > 0 && h('details', { class: 'artist-checks', 'data-artist-checks': String(checks.length) },
+      !sudden && checks.length > 0 && checksPanel(s, checks.length,
         h('summary', {}, `Check artist guesses (${checks.length})`),
         h('ul', { class: 'reveal-rows' }, ...checks.map((r) => checkLine(r, byId.get(r.playerId)?.name ?? '?')))),
       h('div', { class: 'row-actions' },
         h('button', { class: 'btn primary huge', 'data-action': 'next', disabled: busy ? true : null,
           onclick: () => { if (o.status === 'winner') void finish(); else void next(); } }, label),
         removeSongControl(!!hs?.round && s.blocked.includes(hs.round.song_id), () => void blockSong(), () => void unblockSong())));
+  }
+
+  /** The "check artist guesses" panel. The screen is rebuilt on every update, so its open state lives here, per round. */
+  function checksPanel(s: HostState, count: number, ...kids: Child[]) {
+    const rid = s.round?.id ?? '';
+    if (rid !== checksRound) { checksRound = rid; checksOpen = false; }
+    return h('details', {
+      class: 'artist-checks', 'data-artist-checks': String(count), open: checksOpen ? true : null,
+      ontoggle: (e) => { checksOpen = (e.target as HTMLDetailsElement).open; },
+    }, ...kids);
   }
 
   function overScreen(s: HostState) {

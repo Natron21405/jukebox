@@ -113,12 +113,20 @@ describe('one Closest Year round, end to end (host + 3 phones, fake network and 
     expect(hostRoot.textContent).toContain(song.title);
 
     // Borderline artist control: reject, then count, one player's typed guess.
+    // The artist panel is opened by hand, and a redraw (the override below refreshes the whole screen) must not close it.
+    const panel = () => q<HTMLDetailsElement>(hostRoot, 'details.artist-checks')!;
+    panel().open = true; fire(panel(), 'toggle');
     const row = q(hostRoot, '.reveal-row[data-player=Cy]')!;
     const before = Number(row.getAttribute('data-total'));
     q(row, '[data-override=true]')!.click();
     await until(() => Number(q(hostRoot, '.reveal-row[data-player=Cy]')!.getAttribute('data-total')) === before + 2, 'override counted (+2)');
     await until(() => Number(q(hostRoot, '.lb-row[data-player=Cy]')!.getAttribute('data-total')) >= before + 2, 'leaderboard total follows the override');
     expect(q(hostRoot, '.lb-row[data-player=Cy] [data-mark=artist]')!.getAttribute('data-ok')).toBe('true');
+    expect(panel().open, 'the artist panel closed by itself after a redraw').toBe(true);
+    panel().open = false; fire(panel(), 'toggle'); // closing it by hand sticks too, through another redraw
+    q(hostRoot, '.reveal-row[data-player=Cy] [data-override=auto]')?.click();
+    await wait(30);
+    expect(panel().open).toBe(false);
     await until(() => q(phones[2], '[data-points]')?.getAttribute('data-points') === String(before + 2), 'phone sees the override');
 
     // Next song starts a fresh round and a different clip.

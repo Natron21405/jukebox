@@ -73,6 +73,34 @@ async function playClosestYearGame(play: Play) {
 }
 
 
+async function playTimelineGame({ hostRoot, phones, audio, label }: { hostRoot: HTMLElement; phones: HTMLElement[]; audio: ReturnType<typeof fakePlayer>; label: string }) {
+  for (let r = 1; r <= 8 && stage(hostRoot) !== 'over'; r++) {
+    const before = audio.played.length;
+    const btn = q(hostRoot, '[data-action=next]')!;
+    btn.click();
+    await until(() => stage(hostRoot) === 'listening' && audio.played.length === before + 1, `${label} round ${r} listening`);
+    const song = POOL[Number(/clip-(\d+)\.m4a$/.exec(audio.played[before])![1]) - 1];
+    await until(() => phones.every((p) => stage(p) === 'answer' || stage(p) === 'waiting'), `${label} round ${r} phones`);
+    for (const [pi, p] of phones.entries()) {
+      if (!q(p, '[data-action=lock]')) continue;
+      if (!q(p, '[data-component=timeline-picker]')) { for (let k = 0; k <= pi * 3; k++) q(p, '[data-step="1"]')!.click(); q(p, '[data-action=lock]')!.click(); continue; } // sudden death
+      const line: Card[] = [...q(p, '[data-component=timeline-picker]')!.querySelectorAll('[data-card-year]')]
+        .map((c) => ({ year: Number(c.getAttribute('data-card-year')) }));
+      q(p, `[data-slot="${correctSlots(line, song.year)[0]}"]`)!.click();
+      q(p, '[data-action=lock]')!.click();
+    }
+    await until(() => stage(hostRoot) === 'reveal', `${label} round ${r} host reveal`);
+    await until(() => phones.every((p) => stage(p) === 'result'), `${label} round ${r} phone results`);
+    if (q(hostRoot, '[data-action=next]')!.textContent === 'Final results') {
+      q(hostRoot, '[data-action=next]')!.click();
+      await until(() => stage(hostRoot) === 'over', `${label} host game over`);
+    }
+  }
+  expect(stage(hostRoot), `${label}: button says "${q(hostRoot, '[data-action=next]')?.textContent}"`).toBe('over');
+  await until(() => phones.every((p) => q(p, '[data-winner]') !== null), `${label} winner on phones`);
+}
+
+
 describe('Play Again, host and phones (UI level, fake network)', () => {
   const apps: Array<{ stop(): Promise<void> }> = [];
   afterEach(async () => { for (const a of apps.splice(0)) await a.stop(); document.body.replaceChildren(); });
@@ -194,32 +222,7 @@ describe('Play Again, host and phones (UI level, fake network)', () => {
     }
     await until(() => !(q<HTMLButtonElement>(hostRoot, '[data-action=start]')!.disabled), 'start enabled');
 
-    async function playGame(label: string) {
-      for (let r = 1; r <= 8 && stage(hostRoot) !== 'over'; r++) {
-        const before = audio.played.length;
-        const btn = q(hostRoot, '[data-action=next]')!;
-        btn.click();
-        await until(() => stage(hostRoot) === 'listening' && audio.played.length === before + 1, `${label} round ${r} listening`);
-        const song = POOL[Number(/clip-(\d+)\.m4a$/.exec(audio.played[before])![1]) - 1];
-        await until(() => phones.every((p) => stage(p) === 'answer' || stage(p) === 'waiting'), `${label} round ${r} phones`);
-        for (const [pi, p] of phones.entries()) {
-          if (!q(p, '[data-action=lock]')) continue;
-          if (!q(p, '[data-component=timeline-picker]')) { for (let k = 0; k <= pi * 3; k++) q(p, '[data-step="1"]')!.click(); q(p, '[data-action=lock]')!.click(); continue; } // sudden death
-          const line: Card[] = [...q(p, '[data-component=timeline-picker]')!.querySelectorAll('[data-card-year]')]
-            .map((c) => ({ year: Number(c.getAttribute('data-card-year')) }));
-          q(p, `[data-slot="${correctSlots(line, song.year)[0]}"]`)!.click();
-          q(p, '[data-action=lock]')!.click();
-        }
-        await until(() => stage(hostRoot) === 'reveal', `${label} round ${r} host reveal`);
-        await until(() => phones.every((p) => stage(p) === 'result'), `${label} round ${r} phone results`);
-        if (q(hostRoot, '[data-action=next]')!.textContent === 'Final results') {
-          q(hostRoot, '[data-action=next]')!.click();
-          await until(() => stage(hostRoot) === 'over', `${label} host game over`);
-        }
-      }
-      expect(stage(hostRoot), `${label}: button says "${q(hostRoot, '[data-action=next]')?.textContent}"`).toBe('over');
-      await until(() => phones.every((p) => q(p, '[data-winner]') !== null), `${label} winner on phones`);
-    }
+    const playGame = (label: string) => playTimelineGame({ hostRoot, phones, audio, label });
 
     q(hostRoot, '[data-action=start]')!.click();
     await until(() => stage(hostRoot) === 'between', 'host between rounds');
@@ -233,6 +236,59 @@ describe('Play Again, host and phones (UI level, fake network)', () => {
       if (again === 2) break;
       await playGame(`game ${again + 1}`);
     }
+  });
+
+  it('Closest Year: Back to lobby, change a setting, Start gives a brand-new game, never the finished one', async () => {
+    const backend = createFakeBackend(Date.now());
+    const { hostRoot, phones, audio } = await setup(backend);
+    q(hostRoot, '[data-mode=closest_year]')!.click();
+    await until(() => q(hostRoot, '[data-mode=closest_year]')!.classList.contains('on'), 'mode switched');
+    await until(() => !(q<HTMLButtonElement>(hostRoot, '[data-action=start]')!.disabled), 'start enabled');
+    const rounds = Number(q(hostRoot, '[data-setting=rounds] .stepper-value')!.textContent);
+    q(hostRoot, '[data-action=start]')!.click();
+    await until(() => stage(hostRoot) === 'between', 'host between rounds');
+    await playClosestYearGame({ hostRoot, phones, audio, rounds, label: 'finished game' });
+
+    q(hostRoot, '[data-action=back-to-lobby]')!.click();
+    await until(() => !!q(hostRoot, '[data-action=start]'), 'lobby');
+    await until(() => phones.every((p) => stage(p) === 'waiting'), 'phones wait in the lobby');
+    q(hostRoot, '[aria-label="Less: Rounds"]')!.click();
+    await until(() => q(hostRoot, '[data-setting=rounds] .stepper-value')!.textContent === String(rounds - 1), 'rounds changed');
+    q(hostRoot, '[data-action=start]')!.click();
+    await until(() => !q(hostRoot, '[data-action=start]'), 'host left the lobby');
+    await until(() => stage(hostRoot) === 'between', 'a new game, waiting for its first song');
+    expectFresh(hostRoot, phones);
+    expect(q(hostRoot, '[data-action=next]')?.textContent).not.toBe('Final results');
+
+    // ...and the new game really is playable, with the new round count.
+    const rounds2 = rounds - 1;
+    await playClosestYearGame({ hostRoot, phones, audio, rounds: rounds2, label: 'second game' });
+    expect(stage(hostRoot)).toBe('over');
+  });
+
+  it('Timeline: Back to lobby, change a setting, Start gives fresh starting cards, never the finished game', async () => {
+    const backend = createFakeBackend(Date.now());
+    const { hostRoot, phones, audio } = await setup(backend);
+    for (let want = 11; want >= 4; want--) {
+      q(hostRoot, '[aria-label="Less: Cards to win"]')!.click();
+      await until(() => q(hostRoot, '[data-setting=targetCards] .stepper-value')!.textContent === String(want), `target ${want}`);
+      await wait(20);
+    }
+    await until(() => !(q<HTMLButtonElement>(hostRoot, '[data-action=start]')!.disabled), 'start enabled');
+    q(hostRoot, '[data-action=start]')!.click();
+    await until(() => stage(hostRoot) === 'between', 'host between rounds');
+    await playTimelineGame({ hostRoot, phones, audio, label: 'finished game' });
+
+    q(hostRoot, '[data-action=back-to-lobby]')!.click();
+    await until(() => !!q(hostRoot, '[data-action=start]'), 'lobby');
+    await until(() => phones.every((p) => stage(p) === 'waiting'), 'phones wait in the lobby');
+    q(hostRoot, '[aria-label="More: Cards to win"]')!.click();
+    await until(() => q(hostRoot, '[data-setting=targetCards] .stepper-value')!.textContent === '5', 'target changed');
+    await wait(20);
+    q(hostRoot, '[data-action=start]')!.click();
+    await until(() => !q(hostRoot, '[data-action=start]') && stage(hostRoot) === 'between', 'a new game, waiting for its first song');
+    expectFresh(hostRoot, phones);
+    for (const p of phones) expect(q(p, '[data-cards]')!.getAttribute('data-cards')).toBe('2');
   });
 });
 

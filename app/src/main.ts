@@ -1,6 +1,7 @@
 import './ui/style.css';
 import { browserKV, createSupabaseBackend } from './net';
 import { supabase } from './supabase';
+import { mountHome } from './ui/home';
 import { mountHost } from './ui/host';
 import { mountPhone } from './ui/phone';
 import { parseRoute } from './ui/route';
@@ -17,9 +18,10 @@ async function route() {
   if (old) await old.stop();
   const r = parseRoute(location.hash);
   // The host page and the phone page keep separate storage keys, so one browser can try both without clashing.
-  current = r.page === 'host'
-    ? await mountHost(root, { backend, kv, pageUrl: () => location.href })
+  current = r.page === 'home' ? mountHome(root)
+    : r.page === 'host' ? await mountHost(root, { backend, kv, pageUrl: () => location.href })
     : await mountPhone(root, { backend, kv, initialCode: r.code });
+  window.scrollTo(0, 0);
 }
 
 window.addEventListener('hashchange', () => { void route(); });

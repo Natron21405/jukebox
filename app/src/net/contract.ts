@@ -24,7 +24,11 @@ export async function until<T>(read: () => T | Promise<T>, ok: (v: T) => boolean
  * The behaviour every Backend must have. Run against the in-memory fake (fast, always) and against the real
  * Supabase project (throwaway rooms, deleted afterwards), so the fake cannot drift from the database.
  */
-export function backendContract(label: string, make: () => Backend, opts: { after?: () => Promise<void>; makeOther?: () => Backend } = {}) {
+export function backendContract(label: string, make: () => Backend, opts: {
+    after?: () => Promise<void>; makeOther?: () => Backend;
+    /** True against a shared project: skip tests that change global tables (played history, blocklist) beyond this room. */
+    skipGlobal?: boolean;
+  } = {}) {
   describe(`backend contract: ${label}`, () => {
     const backend = make();
     const cleanups: Array<() => Promise<unknown> | unknown> = [];
@@ -249,7 +253,7 @@ export function backendContract(label: string, make: () => Backend, opts: { afte
       expect((await phone(creds.code, 'Kick Me')).r.ok).toBe(true);
     });
 
-    it('resetting played songs keeps the current game songs', async () => {
+    (opts.skipGlobal ? it.skip : it)('resetting played songs keeps the current game songs', async () => {
       const { host } = await newRoom();
       await host.startRound(SONG_A);
       expect(await host.resetPlayed()).toBe(0);

@@ -73,6 +73,8 @@ export const CONFIG = {
     presenceSyncSeconds: 15,
     /** Every screen re-reads the room from the database this often, in case a realtime event was lost. */
     resyncSeconds: 10,
+    /** One extra re-read this long after subscribing: Realtime can report SUBSCRIBED slightly before changes flow. */
+    firstResyncSeconds: 2,
     /** A screen that failed to load its state tries again after this long. */
     retrySeconds: 2,
     /** A button press that has not finished after this long is given up, so the buttons never stay dead. */

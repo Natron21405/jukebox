@@ -3,21 +3,24 @@ import { afterAll, describe, expect, it, vi } from 'vitest';
 import { backendContract } from './contract';
 import { createSupabaseBackend } from './supabaseBackend';
 
-// Integration test against the real project (throwaway rooms, deleted by the contract's cleanup).
-// Skipped when the browser env vars are missing, e.g. in CI without secrets.
+// Integration test against the real project. OPT-IN: it only runs with RUN_REAL_TESTS=1 (and the browser env vars),
+// so a plain `npm test` never touches the real project.
+// It only uses rows it creates: throwaway rooms (deleted afterwards) and test-only song ids ('test-...').
+// Anything global is skipped: the played-songs history is shared by all games, so `resetPlayed` (which deletes the
+// history of every other room) is NOT run here; it is covered by the fake backend contract.
 const url = import.meta.env.VITE_SUPABASE_URL as string | undefined;
 const key = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string | undefined;
-const enabled = Boolean(url && key);
+const enabled = Boolean(url && key) && process.env.RUN_REAL_TESTS === '1';
 
 if (!enabled) {
-  describe.skip('real Supabase project', () => { it('needs VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY', () => undefined); });
+  describe.skip('real Supabase project (opt-in: RUN_REAL_TESTS=1)', () => { it('needs RUN_REAL_TESTS=1 plus VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY', () => undefined); });
 } else {
   vi.setConfig({ testTimeout: 30_000 }); // realtime subscriptions take a moment
   const sb = createClient(url!, key!, { auth: { persistSession: false } });
   afterAll(async () => { await sb.removeAllChannels(); });
   const sbPhone = createClient(url!, key!, { auth: { persistSession: false } });
   afterAll(async () => { await sbPhone.removeAllChannels(); });
-  backendContract('real Supabase project', () => createSupabaseBackend(sb), { makeOther: () => createSupabaseBackend(sbPhone) });
+  backendContract('real Supabase project', () => createSupabaseBackend(sb), { makeOther: () => createSupabaseBackend(sbPhone), skipGlobal: true });
 
   describe('real Supabase project: row level security', () => {
     const backend = createSupabaseBackend(sb);

@@ -94,6 +94,9 @@ export async function watchRoom(
   };
   const every = opts.resyncSeconds ?? CONFIG.net.resyncSeconds;
   const timer = every > 0 ? setInterval(() => void resync(), every * 1000) : undefined;
+  // Realtime can say SUBSCRIBED slightly before changes flow, so a change right after start-up can be missed.
+  // One early re-read closes that gap without waiting for the first regular tick.
+  const early = every > 0 ? setTimeout(() => void resync(), CONFIG.net.firstResyncSeconds * 1000) : undefined;
   const onVisible = () => { if (typeof document === 'undefined' || document.visibilityState === 'visible') void resync(); };
   const onOnline = () => void resync();
   if (typeof document !== 'undefined') document.addEventListener('visibilitychange', onVisible);
@@ -102,6 +105,7 @@ export async function watchRoom(
   return async () => {
     stopped = true;
     clearInterval(timer);
+    clearTimeout(early);
     if (typeof document !== 'undefined') document.removeEventListener('visibilitychange', onVisible);
     if (typeof window !== 'undefined') window.removeEventListener('online', onOnline);
     await unsub();

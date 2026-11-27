@@ -36,7 +36,7 @@ afterEach(async () => { while (open.length) await open.pop()!.stop(); });
 
 async function rig(): Promise<Rig> {
   const fake = createFakeBackend();
-  const creds = await createHostRoom(fake, memoryKV(), 'closest_year');
+  const creds = await createHostRoom(fake, 'closest_year');
   const host = new HostSession(fake, creds);
   const phones: PhoneSession[] = [];
   for (const name of ['Ana', 'Bo', 'Cy', 'Di']) {

@@ -163,7 +163,7 @@ export async function mountPhone(root: HTMLElement, deps: PhoneDeps): Promise<Ph
   // Start: put a remembered seat straight back, otherwise show the join form.
   show(root, h('main', { class: 'screen phone center' }, h('p', { class: 'lead' }, 'Loading…')));
   try {
-    const resumed = await resumeSeat(backend, kv);
+    const resumed = await resumeSeat(backend, kv, deps.initialCode);
     if (resumed) await enter(resumed.seat); else renderJoin();
   } catch {
     renderJoin('Could not reach the game. Check your connection and try again.');

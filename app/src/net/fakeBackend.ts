@@ -16,6 +16,8 @@ interface FakeRound { row: RoundRow; songId: string }
 export interface FakeBackend extends Backend {
   /** Test helpers. */
   advance(ms: number): void;
+  /** The host credentials of a room, for tests that drive the host page and then need to seed or check the database. */
+  hostCredsFor(code: string): { code: string; roomId: string; hostToken: string };
   /** Everything a phone could read with the anon key, for "no spoilers" assertions. */
   publicSnapshot(): string;
 }
@@ -82,6 +84,11 @@ export function createFakeBackend(start = Date.UTC(2026, 0, 1)): FakeBackend {
 
   const api: FakeBackend = {
     advance(ms) { clock += ms; },
+    hostCredsFor(code) {
+      const r = [...rooms.values()].find((x) => x.row.code === code);
+      if (!r) throw new Error('no such room');
+      return { code, roomId: r.row.id, hostToken: r.hostToken };
+    },
     publicSnapshot() {
       return JSON.stringify({
         rooms: [...rooms.values()].map((r) => r.row),

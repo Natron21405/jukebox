@@ -9,7 +9,7 @@ function safeDecode(s: string): string {
 /**
  * Hash routing, because the site is static files on GitHub Pages (no server rewrites):
  *   (empty), #/   the home page: what the game is, and a choice between hosting and joining
- *   #/host         the host page (the big screen)
+ *   #/host         the host page (the big screen): every visit starts a brand new game; nothing is remembered
  *   #/join         the join page (a phone), with an empty code box
  *   #/join/ABCD    the join page with the code filled in (this is what the QR code opens)
  *   anything else  the home page

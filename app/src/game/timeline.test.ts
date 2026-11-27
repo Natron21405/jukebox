@@ -50,7 +50,7 @@ afterEach(async () => { while (open.length) await open.pop()!.stop(); });
 
 async function rig(count = 5): Promise<Rig> {
   const fake = createFakeBackend();
-  const creds = await createHostRoom(fake, memoryKV(), 'timeline');
+  const creds = await createHostRoom(fake, 'timeline');
   const host = new HostSession(fake, creds);
   const phones: PhoneSession[] = [];
   for (const name of NAMES.slice(0, count)) phones.push(await join(fake, creds.code, name));

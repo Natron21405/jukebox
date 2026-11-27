@@ -17,7 +17,7 @@ describe('watchRoom resync (lost realtime events)', () => {
   async function room() {
     const fake = createFakeBackend();
     const kv = memoryKV();
-    const creds = await createHostRoom(fake, kv, 'timeline');
+    const creds = await createHostRoom(fake, 'timeline');
     const host = new HostSession(fake, creds);
     const j = await joinGame(fake, memoryKV(), { code: creds.code, name: 'Ana' });
     if (!j.ok) throw new Error('join failed');

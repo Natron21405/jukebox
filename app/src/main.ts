@@ -11,7 +11,7 @@ const root = document.getElementById('app')!;
 const backend = createSupabaseBackend(supabase);
 const kv = browserKV();
 
-let current: { stop(): Promise<void> } | null = null;
+let current: { stop(): Promise<void>; hosting?(): boolean } | null = null;
 
 async function route() {
   const old = current; current = null;
@@ -28,4 +28,5 @@ window.addEventListener('hashchange', () => { void route(); });
 void route();
 
 // A tab left open keeps old code; pick up a new deploy on its own.
-watchForNewVersion({ everySeconds: 120 });
+// (A host page mid-game is never reloaded: a game lives only in that tab. Phones restore themselves after a reload.)
+watchForNewVersion({ everySeconds: 120, canReload: () => !current?.hosting?.() });

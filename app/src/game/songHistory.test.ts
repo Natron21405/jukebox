@@ -16,7 +16,7 @@ afterEach(async () => { while (open.length) await open.pop()!.stop(); });
 
 async function rig(pool: GameSong[] = POOL) {
   const fake: FakeBackend = createFakeBackend();
-  const creds = await createHostRoom(fake, memoryKV(), 'closest_year');
+  const creds = await createHostRoom(fake, 'closest_year');
   const host = new HostSession(fake, creds);
   for (const name of ['Ana', 'Bo']) {
     const j = await joinGame(fake, memoryKV(), { code: creds.code, name });

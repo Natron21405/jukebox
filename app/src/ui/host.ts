@@ -2,7 +2,7 @@ import {
   CONFIG, MODE_LABELS, checkCanStart, normalizeSettings, stepSetting, type GameMode, type LobbySettings,
 } from '../logic';
 import {
-  HostSession, createHostRoom, forgetHost, loadPublicState, resumeHost, watchRoom,
+  HostSession, clearOldHostStorage, createHostRoom, loadPublicState, watchRoom,
   type Backend, type KV, type PlayerRow, type PublicRoomState,
 } from '../net';
 import type { GameSong } from '../logic';
@@ -25,7 +25,11 @@ export interface HostDeps {
   now?: () => number;
   rng?: () => number;
 }
-export interface HostApp { stop(): Promise<void> }
+export interface HostApp {
+  stop(): Promise<void>;
+  /** True while a game is open on this page (a game lives only in its tab, so the app must not reload it). */
+  hosting(): boolean;
+}
 
 /** songs.json is built by the song pipeline and shipped next to the app (a list of songs, or an object holding one). */
 async function defaultLoadPool(): Promise<GameSong[]> {
@@ -97,9 +101,9 @@ export async function mountHost(root: HTMLElement, deps: HostDeps): Promise<Host
     show(root, h('main', { class: 'screen host center', 'data-page': 'host' },
       h('a', { class: 'back-link', href: HOME_HASH, 'data-action': 'home' }, '← Home'),
       h('h1', { class: 'logo' }, 'Host a game'),
-      h('p', { class: 'lead' }, 'Put this page on the big screen. You get a room code and a QR code, and everyone else joins on their phone.'),
+      h('p', { class: 'lead' }, 'Put this page on the big screen. You get a room code and a QR code, and everyone else joins on their phone. Open this page in another tab or on another device to run a second game at the same time.'),
       message && h('p', { class: 'notice', role: 'alert' }, message),
-      h('button', { class: 'btn primary huge', 'data-action': 'create', onclick: () => void create() }, retry ? 'Try again' : 'Create room'),
+      h('button', { class: 'btn primary huge', 'data-action': 'create', onclick: () => void create() }, retry ? 'Try again' : 'Start a new game'),
     ));
   }
 
@@ -222,7 +226,6 @@ export async function mountHost(root: HTMLElement, deps: HostDeps): Promise<Host
       await teardown();
       session = null; state = null;
       if (e instanceof Error && e.message === 'room not found') {
-        forgetHost(kv);
         renderCreate('That room has ended. Create a new one.');
       } else {
         renderCreate('Could not reach the game server.', true);
@@ -232,7 +235,7 @@ export async function mountHost(root: HTMLElement, deps: HostDeps): Promise<Host
 
   async function create() {
     try {
-      const creds = await createHostRoom(backend, kv, 'timeline', normalizeSettings({}) as unknown as Record<string, unknown>);
+      const creds = await createHostRoom(backend, 'timeline', normalizeSettings({}) as unknown as Record<string, unknown>);
       await open(creds);
     } catch {
       renderCreate('Could not create a room. Check the connection.', true);
@@ -242,21 +245,12 @@ export async function mountHost(root: HTMLElement, deps: HostDeps): Promise<Host
   const onVisible = () => { if (document.visibilityState === 'visible') void refresh(); };
   document.addEventListener('visibilitychange', onVisible);
 
-  // Start: rebuild from the database if this browser already hosts a room.
-  show(root, h('main', { class: 'screen host center' }, h('p', { class: 'lead' }, 'Loading…')));
-  try {
-    const resumed = await resumeHost(backend, kv);
-    if (resumed && resumed.state.room.status === 'over') {
-      // Opening the host page after a finished game must not land on that game's winner screen: start the same room fresh
-      // (same code, players keep their seats). If this fails we still open the room, and Play Again is there.
-      try { await new HostSession(backend, resumed.creds).newGame(); } catch { /* fall through */ }
-    }
-    if (resumed) await open(resumed.creds); else renderCreate();
-  } catch {
-    renderCreate('Could not reach the game server.', true);
-  }
+  // Start: nothing is remembered between visits, so this page always offers a brand new game.
+  clearOldHostStorage(kv);
+  renderCreate();
 
   return {
+    hosting: () => session !== null,
     async stop() {
       stopped = true;
       songs?.close();

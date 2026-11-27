@@ -36,10 +36,12 @@ export async function joinGame(backend: Backend, kv: KV, a: { code: string; name
 }
 
 /** On page load: the remembered seat plus fresh state, or null (and the stale seat is forgotten) if it is gone. */
-export async function resumeSeat(backend: Backend, kv: KV): Promise<{ seat: StoredSeat; state: MyState } | null> {
+export async function resumeSeat(backend: Backend, kv: KV, onlyCode = ''): Promise<{ seat: StoredSeat; state: MyState } | null> {
   const store = seatStore(kv);
   const seat = store.load();
   if (!seat) return null;
+  // An address that names a different room (a new QR code) means "join that one", not "go back to the old seat".
+  if (onlyCode && seat.code !== onlyCode) return null;
   const state = await backend.getMyState(seat.seatToken);
   if (!state) { store.clear(); return null; }
   // A rotated token (seat reclaimed elsewhere) fails the lookup above, so reaching here means the seat is still ours.

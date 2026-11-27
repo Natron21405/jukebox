@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { CONFIG, NAME_TAKEN_MESSAGE } from '../logic';
 import type { Backend } from './backend';
-import { createHostRoom, HostSession, resumeHost } from './host';
+import { createHostRoom, HostSession } from './host';
 import { memoryKV } from './storage';
 import { joinGame, resumeSeat, startPhoneSession } from './room';
 import { loadPublicState, watchRoom, type PublicRoomState } from './watch';
@@ -31,10 +31,9 @@ export function backendContract(label: string, make: () => Backend, opts: { afte
     const rooms: Array<{ roomId: string; hostToken: string }> = [];
 
     const newRoom = async () => {
-      const kv = memoryKV();
-      const creds = await createHostRoom(backend, kv, 'timeline', { marker: 'net-test' });
+      const creds = await createHostRoom(backend, 'timeline', { marker: 'net-test' });
       rooms.push({ roomId: creds.roomId, hostToken: creds.hostToken });
-      return { creds, kv, host: new HostSession(backend, creds) };
+      return { creds, host: new HostSession(backend, creds) };
     };
     const phone = async (code: string, name: string, kv = memoryKV()) => {
       const r = await joinGame(backend, kv, { code, name });
@@ -207,8 +206,8 @@ export function backendContract(label: string, make: () => Backend, opts: { afte
       expect(await backend.getLatestRound(creds.roomId)).toBeNull();
     });
 
-    it('rebuilds the host screen from the database after a reload', async () => {
-      const { creds, kv, host } = await newRoom();
+    it('rebuilds the whole host view from the database with just the room credentials', async () => {
+      const { creds, host } = await newRoom();
       const a = await phone(creds.code, 'Ann');
       const b = await phone(creds.code, 'Bo');
       if (!a.r.ok || !b.r.ok) throw new Error('join failed');
@@ -219,10 +218,8 @@ export function backendContract(label: string, make: () => Backend, opts: { afte
       await backend.submitAnswer(b.r.seat.seatToken, r2.id, { slot: 0, artist: 'x', lock: true });
       await host.blockSong('test-blocked');
 
-      // "Reload": every in-memory object is gone, only storage (the credentials) survives.
-      const resumed = await resumeHost(backend, kv);
-      if (!resumed) throw new Error('resume failed');
-      const s = resumed.state;
+      // Everything the host screen shows comes back from the database, with nothing but the room credentials.
+      const s = await new HostSession(backend, creds).state();
       expect(s.room.id).toBe(creds.roomId);
       expect(s.room.round_no).toBe(2);
       expect(s.room.status).toBe('playing');
@@ -235,11 +232,10 @@ export function backendContract(label: string, make: () => Backend, opts: { afte
       expect(s.blocked).toContain('test-blocked');
     });
 
-    it('forgets a deleted room when the host reloads', async () => {
-      const { kv, host } = await newRoom();
+    it('a deleted room no longer answers host calls', async () => {
+      const { creds, host } = await newRoom();
       await host.deleteRoom();
-      expect(await resumeHost(backend, kv)).toBeNull();
-      expect(kv.getItem('jukebox.host')).toBeNull();
+      await expect(new HostSession(backend, creds).state()).rejects.toThrow();
     });
 
     it('lets the host kick a player: the seat is gone and the name is free again', async () => {

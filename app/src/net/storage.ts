@@ -1,4 +1,4 @@
-/** The seat a phone remembers (so a refresh puts the player straight back), and the host's room credentials. */
+/** The seat a phone remembers (so a refresh puts the player straight back), and a host's room credentials (in memory only). */
 export interface StoredSeat { code: string; roomId: string; playerId: string; seatToken: string; name: string }
 export interface StoredHost { code: string; roomId: string; hostToken: string }
 
@@ -10,7 +10,7 @@ export interface KV {
 }
 
 export const SEAT_KEY = 'jukebox.seat';
-export const HOST_KEY = 'jukebox.host';
+const OLD_HOST_KEYS = ['jukebox.host', 'jukebox.hosts']; // saved by earlier versions
 
 export function memoryKV(): KV {
   const m = new Map<string, string>();
@@ -47,8 +47,10 @@ export const seatStore = (kv: KV) => ({
   clear: () => kv.removeItem(SEAT_KEY),
 });
 
-export const hostStore = (kv: KV) => ({
-  load: () => load<StoredHost>(kv, HOST_KEY, (v) => str(v.code) && str(v.roomId) && str(v.hostToken)),
-  save: (s: StoredHost) => kv.setItem(HOST_KEY, JSON.stringify(s)),
-  clear: () => kv.removeItem(HOST_KEY),
-});
+/**
+ * The host page keeps nothing: a game lives in the open tab, like Jackbox and Kahoot. Earlier versions saved the
+ * host's room credentials here, which brought old games back by surprise, so those leftovers are wiped.
+ */
+export function clearOldHostStorage(kv: KV): void {
+  for (const k of OLD_HOST_KEYS) { try { kv.removeItem(k); } catch { /* storage unavailable */ } }
+}

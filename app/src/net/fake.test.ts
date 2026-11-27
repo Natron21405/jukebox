@@ -10,7 +10,7 @@ backendContract('in-memory fake', () => createFakeBackend());
 describe('fake backend: liveness and spoilers', () => {
   it('treats a silent seat as reclaimable once its heartbeat is stale', async () => {
     const b = createFakeBackend();
-    const creds = await createHostRoom(b, memoryKV(), 'timeline');
+    const creds = await createHostRoom(b, 'timeline');
     const first = await joinGame(b, memoryKV(), { code: creds.code, name: 'Lee' });
     expect(first.ok).toBe(true);
     expect((await joinGame(b, memoryKV(), { code: creds.code, name: 'Lee' })).ok).toBe(false);
@@ -22,7 +22,7 @@ describe('fake backend: liveness and spoilers', () => {
   it('never puts the current song in anything a phone can read', async () => {
     const b = createFakeBackend();
     const kv = memoryKV();
-    const creds = await createHostRoom(b, kv, 'timeline');
+    const creds = await createHostRoom(b, 'timeline');
     const p = await joinGame(b, memoryKV(), { code: creds.code, name: 'Lee' });
     if (!p.ok) throw new Error('join failed');
     const round = await b.hostStartRound(creds.roomId, creds.hostToken, { songId: SONG_A });

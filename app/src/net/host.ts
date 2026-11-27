@@ -1,31 +1,13 @@
 import { CONFIG } from '../logic';
 import type { Backend } from './backend';
-import type { KV, StoredHost } from './storage';
-import { hostStore } from './storage';
+import type { StoredHost } from './storage';
 import type { Mode, HostState, PlayerResult, RoomRow, RoundRow } from './types';
 
-/** Create a room and remember its host credentials, so a refresh of the host screen can rebuild. */
-export async function createHostRoom(backend: Backend, kv: KV, mode: Mode, settings: Record<string, unknown> = {}) {
+/** Create a room. The credentials live only in the host page's memory: a refresh ends the game, as in Jackbox. */
+export async function createHostRoom(backend: Backend, mode: Mode, settings: Record<string, unknown> = {}): Promise<StoredHost> {
   const r = await backend.createRoom(mode, settings);
-  const creds: StoredHost = { code: r.code, roomId: r.room_id, hostToken: r.host_token };
-  hostStore(kv).save(creds);
-  return creds;
+  return { code: r.code, roomId: r.room_id, hostToken: r.host_token };
 }
-
-/** After a host refresh: rebuild everything from the database. Null (and credentials forgotten) if the room is gone. */
-export async function resumeHost(backend: Backend, kv: KV): Promise<{ creds: StoredHost; state: HostState } | null> {
-  const store = hostStore(kv);
-  const creds = store.load();
-  if (!creds) return null;
-  try {
-    return { creds, state: await backend.hostGetState(creds.roomId, creds.hostToken) };
-  } catch {
-    store.clear();
-    return null;
-  }
-}
-
-export function forgetHost(kv: KV): void { hostStore(kv).clear(); }
 
 /** Every host-only operation, with the room id and token filled in. */
 export class HostSession {

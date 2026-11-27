@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { afterEach, describe, expect, it } from 'vitest';
 import type { GameSong } from '../logic';
-import { HostSession, createFakeBackend, memoryKV, resumeHost, type FakeBackend } from '../net';
+import { HostSession, createFakeBackend, memoryKV, type FakeBackend } from '../net';
 import { mountHost } from './host';
 import type { ClipPlayer } from './hostGame';
 import { mountPhone } from './phone';
@@ -50,8 +50,7 @@ describe('song history screens (host + 2 phones, fake network)', () => {
     await until(() => hostRoot.querySelectorAll('[data-player]').length === 2, 'two players');
     q(hostRoot, '[data-mode=closest_year]')!.click();
     await until(() => q(hostRoot, '[data-mode=closest_year]')!.classList.contains('on'), 'mode switched');
-    const resumed = await resumeHost(backend, kv);
-    const db = new HostSession(backend, resumed!.creds);
+    const db = new HostSession(backend, backend.hostCredsFor(code));
     return { hostRoot, db };
   }
   const startGame = async (hostRoot: HTMLElement) => {

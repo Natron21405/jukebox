@@ -30,7 +30,7 @@ describe('play again (fake backend)', () => {
   it('starts game 2 clean, never repeats a song, and survives a host refresh and a phone rejoin', async () => {
     const fake = createFakeBackend();
     const hostKv = memoryKV();
-    const creds: StoredHost = await createHostRoom(fake, hostKv, 'timeline');
+    const creds: StoredHost = await createHostRoom(fake, 'timeline');
     let host = new HostSession(fake, creds);
     const kvs: KV[] = NAMES.map(() => memoryKV());
     const phones: PhoneSession[] = [];

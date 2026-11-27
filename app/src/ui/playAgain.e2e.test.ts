@@ -132,7 +132,7 @@ describe('Play Again, host and phones (UI level, fake network)', () => {
       phones.push(r);
     }
     await until(() => hostRoot.querySelectorAll('[data-player]').length === 3, 'three players on the host');
-    return { hostRoot, phones, audio, code, phoneKvs, remountHost: mountOne };
+    return { hostRoot, phones, audio, code, phoneKvs };
   }
 
   /** Nothing from a finished game may be on screen: no winner, no answer, no reveal rows, no leaderboard. */
@@ -154,7 +154,7 @@ describe('Play Again, host and phones (UI level, fake network)', () => {
 
   it('Closest Year: after Play Again the host and every phone show a fresh game, and it can be played again', async () => {
     const backend = createFakeBackend(Date.now());
-    const { hostRoot, phones, audio, remountHost, phoneKvs } = await setup(backend);
+    const { hostRoot, phones, audio, phoneKvs } = await setup(backend);
     q(hostRoot, '[data-mode=closest_year]')!.click();
     await until(() => q(hostRoot, '[data-mode=closest_year]')!.classList.contains('on'), 'mode switched');
     await until(() => !(q<HTMLButtonElement>(hostRoot, '[data-action=start]')!.disabled), 'start enabled');
@@ -175,40 +175,11 @@ describe('Play Again, host and phones (UI level, fake network)', () => {
       await playGame(`game ${again + 1}`);
     }
 
-    // A host refresh mid-new-game keeps the fresh screen too.
-    await remountHost();
-    await until(() => stage(hostRoot) === 'between', 'host back after a refresh');
-    expectFresh(hostRoot, phones);
-
     // A phone refresh (same browser storage) lands on the fresh waiting screen, not the old results.
     const again = root();
     apps.push(await mountPhone(again, { backend, kv: phoneKvs[0], initialCode: '' }) as PhoneApp);
     await until(() => stage(again) === 'waiting', 'phone back after a refresh');
     expectFresh(hostRoot, [again]);
-  });
-
-  it('opening the host page after a finished game shows a fresh game, not the old winner screen', async () => {
-    const backend = createFakeBackend(Date.now());
-    const { hostRoot, phones, audio, remountHost, code } = await setup(backend);
-    q(hostRoot, '[data-mode=closest_year]')!.click();
-    await until(() => q(hostRoot, '[data-mode=closest_year]')!.classList.contains('on'), 'mode switched');
-    await until(() => !(q<HTMLButtonElement>(hostRoot, '[data-action=start]')!.disabled), 'start enabled');
-    const rounds = Number(q(hostRoot, '[data-setting=rounds] .stepper-value')!.textContent);
-    q(hostRoot, '[data-action=start]')!.click();
-    await until(() => stage(hostRoot) === 'between', 'host between rounds');
-    await playClosestYearGame({ hostRoot, phones, audio, rounds, label: 'finished game' });
-
-    // The host closes the tab and opens the host page again (same browser storage, same room).
-    await remountHost();
-    await until(() => !!q(hostRoot, '[data-action=start]'), 'host page opens on a fresh lobby');
-    expect(q(hostRoot, '[data-room-code]')!.getAttribute('data-room-code')).toBe(code); // same room, players keep their seats
-    expect(hostRoot.querySelectorAll('[data-player]').length).toBe(3);
-    for (const sel of ['[data-winner]', '[data-answer-year]', '.reveal-row', '.lb-row', '[data-action=play-again]']) {
-      expect(q(hostRoot, sel), `host still shows ${sel}`).toBeNull();
-    }
-    expect(hostRoot.textContent).not.toContain('Zanzibar');
-    await until(() => phones.every((p) => stage(p) === 'waiting'), 'phones leave the old results');
-    for (const p of phones) expect(q(p, '[data-winner]')).toBeNull();
   });
 
   it('Timeline: after Play Again the host and every phone show a fresh game, and it can be played again', async () => {
@@ -350,7 +321,7 @@ describe('Play Again survives a bad network (UI level)', () => {
     const rounds = Number(q(hostRoot, '[data-setting=rounds] .stepper-value')!.textContent);
     q(hostRoot, '[data-action=start]')!.click();
     await until(() => stage(hostRoot) === 'between', 'host between rounds');
-    return { hostRoot, phones, audio, rounds, remountHost: mountOne };
+    return { hostRoot, phones, audio, rounds };
   }
 
   async function finishedGame(b: Backend) {
@@ -416,21 +387,6 @@ describe('Play Again survives a bad network (UI level)', () => {
       expect(q(hostRoot, '[data-winner]')).not.toBeNull();
       expect(q(hostRoot, '[data-action=play-again]')).not.toBeNull();
       await until(() => phones.every((p) => q(p, '[data-winner]') !== null), 'winner on phones');
-    });
-
-    it('opening the host page again repairs it on its own, and Play Again then works', async () => {
-      const { hostRoot, phones, sw, remountHost } = await stuck();
-      sw.failOver = false;
-      await remountHost();
-      // the phones only show a winner once the room itself is over, so this proves the page repaired the room by itself
-      await until(() => phones.every((p) => q(p, '[data-winner]') !== null), 'winner on phones');
-      // the page is not frozen: the winner screen's own button works
-      await until(() => q(hostRoot, '[data-action=next]')?.textContent === 'Final results', 'Final results offered');
-      q(hostRoot, '[data-action=next]')!.click();
-      await until(() => stage(hostRoot) === 'over', 'winner screen');
-      await until(() => !!q(hostRoot, '[data-action=play-again]'), 'Play Again offered');
-      q(hostRoot, '[data-action=play-again]')!.click();
-      await until(() => fresh(hostRoot, phones), 'a fresh game after Play Again');
     });
 
     it('still offline: the button says so instead of doing nothing, and works once the network is back', async () => {

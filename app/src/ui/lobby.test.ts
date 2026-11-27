@@ -98,33 +98,70 @@ describe('lobby screens (host + phones, driven by the fake net layer)', () => {
     expect(names(host.root).sort()).toEqual(['Ann', 'Bo', 'Cy']);
   });
 
-  it('restores the lobby, including mode and settings, when the host refreshes', async () => {
+  it('a refreshed host page starts a brand new game; nothing about the old one is remembered', async () => {
     const backend = createFakeBackend();
     const kv = memoryKV();
-    const host = await startHost(backend, kv);
-    q(host.root, '[data-action=create]')!.click();
+    const first = await startHost(backend, kv);
+    q(first.root, '[data-action=create]')!.click();
     await tick();
-    const code = roomCode(host.root);
-    for (const name of ['Ann', 'Bo', 'Cy']) {
-      const p = await startPhone(backend, memoryKV(), code);
-      await submitJoin(p.root, code, name);
-    }
-    await tick();
-    q(host.root, '[data-mode=closest_year]')!.click();
-    await tick();
-    q(host.root, '[data-setting=rounds] [aria-label^="More"]')!.click();
-    await tick();
-    const rounds = q(host.root, '[data-setting=rounds] .stepper-value')!.textContent;
+    const oldCode = roomCode(first.root);
+    await first.app.stop();
+    first.root.remove();
 
-    await host.app.stop();
-    host.root.remove();
-    const again = await startHost(backend, kv);
+    const again = await startHost(backend, kv); // the host page opened again, same browser
     await tick();
-    expect(q(again.root, '[data-action=create]')).toBeNull(); // no "create room": it resumed
-    expect(roomCode(again.root)).toBe(code);
-    expect(names(again.root).sort()).toEqual(['Ann', 'Bo', 'Cy']);
-    expect(q(again.root, '[data-mode=closest_year]')!.getAttribute('aria-pressed')).toBe('true');
-    expect(q(again.root, '[data-setting=rounds] .stepper-value')!.textContent).toBe(rounds);
+    expect(q(again.root, '[data-room-code]')).toBeNull(); // the old game does not come back
+    expect(again.root.textContent).not.toContain(oldCode);
+    expect(q(again.root, '[data-saved-game]')).toBeNull(); // and there is no list of past games
+    q(again.root, '[data-action=create]')!.click();
+    await tick();
+    expect(roomCode(again.root)).not.toBe(oldCode);
+  });
+
+  it('wipes the host credentials that earlier versions saved in the browser', async () => {
+    const kv = memoryKV();
+    kv.setItem('jukebox.host', JSON.stringify({ code: 'ABCD', roomId: 'x', hostToken: 'y' }));
+    kv.setItem('jukebox.hosts', JSON.stringify([{ code: 'ABCD', roomId: 'x', hostToken: 'y' }]));
+    await startHost(createFakeBackend(), kv);
+    expect(kv.getItem('jukebox.host')).toBeNull();
+    expect(kv.getItem('jukebox.hosts')).toBeNull();
+  });
+
+  it('creating a game saves nothing in the browser', async () => {
+    const kv = memoryKV();
+    const saved: string[] = [];
+    const spy = { getItem: (k: string) => kv.getItem(k), setItem: (k: string, v: string) => { saved.push(k); kv.setItem(k, v); }, removeItem: (k: string) => kv.removeItem(k) };
+    const { root } = await startHost(createFakeBackend(), spy);
+    q(root, '[data-action=create]')!.click();
+    await tick();
+    expect(q(root, '[data-room-code]')).not.toBeNull();
+    expect(saved).toEqual([]);
+  });
+
+  it('reports a game as open only while one is open (so a new deploy never reloads a live game)', async () => {
+    const { root, app } = await startHost();
+    await tick();
+    expect(app.hosting()).toBe(false);
+    q(root, '[data-action=create]')!.click();
+    await tick();
+    expect(app.hosting()).toBe(true);
+  });
+
+  it('two games can be hosted at once, each with its own players', async () => {
+    const backend = createFakeBackend();
+    const h1 = await startHost(backend);
+    const h2 = await startHost(backend);
+    q(h1.root, '[data-action=create]')!.click();
+    q(h2.root, '[data-action=create]')!.click();
+    await tick();
+    const c1 = roomCode(h1.root);
+    const c2 = roomCode(h2.root);
+    expect(c1).not.toBe(c2);
+    const p = await startPhone(backend, memoryKV(), c1);
+    await submitJoin(p.root, c1, 'Ann');
+    await tick();
+    expect(names(h1.root)).toEqual(['Ann']);
+    expect(names(h2.root)).toEqual([]);
   });
 
   it('changes the win target in Timeline mode and stays inside the allowed range', async () => {

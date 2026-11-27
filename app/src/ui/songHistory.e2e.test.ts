@@ -36,7 +36,6 @@ describe('song history screens (host + 2 phones, fake network)', () => {
     const kv = memoryKV();
     const hostRoot = root();
     apps.push(await mountHost(hostRoot, { backend, kv, pageUrl: () => 'https://example.test/jukebox/', loadPool: async () => pool, player, rng: () => 0.5 }));
-    q(hostRoot, '[data-action=create]')!.click();
     await until(() => !!q(hostRoot, '[data-room-code]'), 'room code');
     const code = q(hostRoot, '[data-room-code]')!.getAttribute('data-room-code')!;
     for (const name of ['Ana', 'Ben']) {

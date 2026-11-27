@@ -32,6 +32,7 @@ describe('lobby screens (host + phones, driven by the fake net layer)', () => {
   async function startHost(backend = createFakeBackend(), kv = memoryKV()) {
     const root = newRoot();
     const app = track(await mountHost(root, { backend, kv, pageUrl: () => PAGE, loadPool: async () => POOL }));
+    await tick(); // the host page makes its game as soon as it opens
     return { root, app, backend, kv };
   }
   async function startPhone(backend: ReturnType<typeof createFakeBackend>, kv = memoryKV(), code = '') {
@@ -50,9 +51,6 @@ describe('lobby screens (host + phones, driven by the fake net layer)', () => {
 
   it('creates a room and shows the code, the join address and a QR code', async () => {
     const { root } = await startHost();
-    expect(q(root, '[data-action=create]')).not.toBeNull();
-    q(root, '[data-action=create]')!.click();
-    await tick();
     expect(roomCode(root)).toMatch(/^[A-Z]{4}$/);
     expect(root.textContent).toContain('example.test/jukebox');
     expect(q(root, '.qr svg')).not.toBeNull();
@@ -62,7 +60,6 @@ describe('lobby screens (host + phones, driven by the fake net layer)', () => {
   it('joins 3 phones, rejects a duplicate name kindly, and keeps seats across refreshes', async () => {
     const backend = createFakeBackend();
     const host = await startHost(backend);
-    q(host.root, '[data-action=create]')!.click();
     await tick();
     const code = roomCode(host.root);
 
@@ -102,7 +99,6 @@ describe('lobby screens (host + phones, driven by the fake net layer)', () => {
     const backend = createFakeBackend();
     const kv = memoryKV();
     const first = await startHost(backend, kv);
-    q(first.root, '[data-action=create]')!.click();
     await tick();
     const oldCode = roomCode(first.root);
     await first.app.stop();
@@ -110,11 +106,8 @@ describe('lobby screens (host + phones, driven by the fake net layer)', () => {
 
     const again = await startHost(backend, kv); // the host page opened again, same browser
     await tick();
-    expect(q(again.root, '[data-room-code]')).toBeNull(); // the old game does not come back
-    expect(again.root.textContent).not.toContain(oldCode);
+    expect(again.root.textContent).not.toContain(oldCode); // the old game does not come back
     expect(q(again.root, '[data-saved-game]')).toBeNull(); // and there is no list of past games
-    q(again.root, '[data-action=create]')!.click();
-    await tick();
     expect(roomCode(again.root)).not.toBe(oldCode);
   });
 
@@ -132,27 +125,42 @@ describe('lobby screens (host + phones, driven by the fake net layer)', () => {
     const saved: string[] = [];
     const spy = { getItem: (k: string) => kv.getItem(k), setItem: (k: string, v: string) => { saved.push(k); kv.setItem(k, v); }, removeItem: (k: string) => kv.removeItem(k) };
     const { root } = await startHost(createFakeBackend(), spy);
-    q(root, '[data-action=create]')!.click();
     await tick();
     expect(q(root, '[data-room-code]')).not.toBeNull();
     expect(saved).toEqual([]);
   });
 
-  it('reports a game as open only while one is open (so a new deploy never reloads a live game)', async () => {
-    const { root, app } = await startHost();
-    await tick();
+  it('reports a game as open once it exists (so a new deploy never reloads a live game)', async () => {
+    const { app } = await startHost();
+    expect(app.hosting()).toBe(true);
+  });
+
+  it('has no extra start page: opening the host page goes straight to the game, with a way back home', async () => {
+    const { root } = await startHost();
+    expect(q(root, '[data-action=create]')).toBeNull();
+    expect(q(root, '[data-room-code]')).not.toBeNull();
+    expect(q(root, 'a[data-action=home]')!.getAttribute('href')).toBe('#/');
+  });
+
+  it('if the room cannot be made, says so and offers Try again and Home', async () => {
+    const backend = createFakeBackend();
+    const real = backend.createRoom.bind(backend);
+    let fail = true;
+    backend.createRoom = (async (...a: Parameters<typeof real>) => { if (fail) throw new Error('offline'); return real(...a); }) as typeof backend.createRoom;
+    const { root, app } = await startHost(backend);
     expect(app.hosting()).toBe(false);
+    expect(q(root, '[role=alert]')).not.toBeNull();
+    expect(q(root, 'a[data-action=home]')).not.toBeNull();
+    fail = false;
     q(root, '[data-action=create]')!.click();
     await tick();
-    expect(app.hosting()).toBe(true);
+    expect(roomCode(root)).toMatch(/^[A-Z]{4}$/);
   });
 
   it('two games can be hosted at once, each with its own players', async () => {
     const backend = createFakeBackend();
     const h1 = await startHost(backend);
     const h2 = await startHost(backend);
-    q(h1.root, '[data-action=create]')!.click();
-    q(h2.root, '[data-action=create]')!.click();
     await tick();
     const c1 = roomCode(h1.root);
     const c2 = roomCode(h2.root);
@@ -166,7 +174,6 @@ describe('lobby screens (host + phones, driven by the fake net layer)', () => {
 
   it('changes the win target in Timeline mode and stays inside the allowed range', async () => {
     const { root } = await startHost();
-    q(root, '[data-action=create]')!.click();
     await tick();
     const read = () => Number(q(root, '[data-setting=targetCards] .stepper-value')!.textContent);
     const before = read();
@@ -181,7 +188,6 @@ describe('lobby screens (host + phones, driven by the fake net layer)', () => {
   it('player rows keep the name whole on one line: avatar initial, name element with a title, kick button', async () => {
     const backend = createFakeBackend();
     const host = await startHost(backend);
-    q(host.root, '[data-action=create]')!.click();
     await tick();
     const code = roomCode(host.root);
     const ann = await startPhone(backend, memoryKV(), code);
@@ -197,7 +203,6 @@ describe('lobby screens (host + phones, driven by the fake net layer)', () => {
   it('kicks a player with a two-tap confirm; their phone returns to the join form and the name is free', async () => {
     const backend = createFakeBackend();
     const host = await startHost(backend);
-    q(host.root, '[data-action=create]')!.click();
     await tick();
     const code = roomCode(host.root);
     const ann = await startPhone(backend, memoryKV(), code);
@@ -225,7 +230,6 @@ describe('lobby screens (host + phones, driven by the fake net layer)', () => {
   it('starts the game once 2 players are in, and phones stop saying "waiting"', async () => {
     const backend = createFakeBackend();
     const host = await startHost(backend);
-    q(host.root, '[data-action=create]')!.click();
     await tick();
     const code = roomCode(host.root);
     const phones = [];

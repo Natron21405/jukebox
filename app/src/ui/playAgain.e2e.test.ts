@@ -117,7 +117,6 @@ describe('Play Again, host and phones (UI level, fake network)', () => {
     };
     const kv = memoryKV();
     await mountOne();
-    q(hostRoot, '[data-action=create]')!.click();
     await until(() => !!q(hostRoot, '[data-room-code]'), 'room code');
     const code = q(hostRoot, '[data-room-code]')!.getAttribute('data-room-code')!;
     const phones: HTMLElement[] = [];
@@ -301,7 +300,6 @@ describe('Play Again survives a bad network (UI level)', () => {
       return h;
     };
     await mountOne();
-    q(hostRoot, '[data-action=create]')!.click();
     await until(() => !!q(hostRoot, '[data-room-code]'), 'room code');
     const code = q(hostRoot, '[data-room-code]')!.getAttribute('data-room-code')!;
     const phones: HTMLElement[] = [];

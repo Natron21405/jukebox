@@ -97,15 +97,18 @@ export async function mountHost(root: HTMLElement, deps: HostDeps): Promise<Host
   };
 
   // ------------------------------------------------------------------ screens
-  function renderCreate(message = '', retry = false) {
+  // Shown while the room is being made, and again only if that fails (so there is always a way to retry or leave).
+  function renderStarting(message = '', retry = false) {
     show(root, h('main', { class: 'screen host center', 'data-page': 'host' },
-      h('a', { class: 'back-link', href: HOME_HASH, 'data-action': 'home' }, '← Home'),
+      homeLink(),
       h('h1', { class: 'logo' }, 'Host a game'),
-      h('p', { class: 'lead' }, 'Put this page on the big screen. You get a room code and a QR code, and everyone else joins on their phone. Open this page in another tab or on another device to run a second game at the same time.'),
-      message && h('p', { class: 'notice', role: 'alert' }, message),
-      h('button', { class: 'btn primary huge', 'data-action': 'create', onclick: () => void create() }, retry ? 'Try again' : 'Start a new game'),
+      message
+        ? h('p', { class: 'notice', role: 'alert' }, message)
+        : h('p', { class: 'lead' }, 'Setting up your game…'),
+      retry && h('button', { class: 'btn primary huge', 'data-action': 'create', onclick: () => void create() }, 'Try again'),
     ));
   }
+  const homeLink = () => h('a', { class: 'back-link', href: HOME_HASH, 'data-action': 'home' }, '← Home');
 
   function joinStrip(code: string, small: boolean) {
     const url = joinUrl(deps.pageUrl(), code);
@@ -160,6 +163,7 @@ export async function mountHost(root: HTMLElement, deps: HostDeps): Promise<Host
     }, MODE_LABELS[m]);
 
     return h('main', { class: 'screen host lobby' },
+      homeLink(),
       joinStrip(s.room.code, false),
       h('section', { class: 'players-panel' },
         h('h2', {}, `Players `, h('span', { class: 'count', 'data-count': String(players.length) }, `${players.length} / ${CONFIG.maxPlayers}`)),
@@ -226,28 +230,30 @@ export async function mountHost(root: HTMLElement, deps: HostDeps): Promise<Host
       await teardown();
       session = null; state = null;
       if (e instanceof Error && e.message === 'room not found') {
-        renderCreate('That room has ended. Create a new one.');
+        renderStarting('That room has ended. Start a new one.', true);
       } else {
-        renderCreate('Could not reach the game server.', true);
+        renderStarting('Could not reach the game server.', true);
       }
     }
   }
 
   async function create() {
+    renderStarting();
     try {
       const creds = await createHostRoom(backend, 'timeline', normalizeSettings({}) as unknown as Record<string, unknown>);
+      if (stopped) return; // the host left before the room was ready; it expires on its own
       await open(creds);
     } catch {
-      renderCreate('Could not create a room. Check the connection.', true);
+      if (!stopped) renderStarting('Could not create a room. Check the connection.', true);
     }
   }
 
   const onVisible = () => { if (document.visibilityState === 'visible') void refresh(); };
   document.addEventListener('visibilitychange', onVisible);
 
-  // Start: nothing is remembered between visits, so this page always offers a brand new game.
+  // Nothing is remembered between visits: opening this page always starts a brand new game.
   clearOldHostStorage(kv);
-  renderCreate();
+  void create();
 
   return {
     hosting: () => session !== null,

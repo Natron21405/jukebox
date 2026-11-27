@@ -45,7 +45,6 @@ describe('Timeline, end to end (host + 3 phones, fake network and fake audio)', 
       loadPool: async () => POOL, player: audio.p, rng: () => 0.5,
     });
     apps.push(host);
-    q(hostRoot, '[data-action=create]')!.click();
     await until(() => !!q(hostRoot, '[data-room-code]'), 'room code');
     const code = q(hostRoot, '[data-room-code]')!.getAttribute('data-room-code')!;
 

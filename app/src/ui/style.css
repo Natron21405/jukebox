@@ -92,6 +92,7 @@ h1, h2, p { margin: 0; }
 .btn.step { font-size: 1.8rem; padding: 0; }
 
 @media (min-width: 900px) {
+  .screen.host.lobby .back-link { grid-column: 1 / -1; }
   body { font-size: 22px; }
   .screen.host.lobby { grid-template-columns: 1fr 1fr; align-items: start; }
   .join-card { grid-column: 1 / -1; }

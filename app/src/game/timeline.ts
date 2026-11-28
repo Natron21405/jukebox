@@ -35,6 +35,8 @@ export class TimelineGame {
   private readonly songs: Map<string, GameSong>;
   private readonly now: () => number;
   private busy: Promise<unknown> = Promise.resolve();
+  /** Players who were connected when the current round opened (kept in memory; a refreshed host starts without it). */
+  private roster: { roundId: string; ids: Set<string> } | null = null;
 
   constructor(private readonly d: TimelineDeps) {
     this.songs = new Map(d.pool.map((s) => [s.id, s]));
@@ -49,14 +51,18 @@ export class TimelineGame {
 
   settings(room: HostState['room']): LobbySettings { return normalizeSettings(room.settings); }
 
-  /** Start (or restart) a game: zero progress, status "playing", and everyone gets two different year cards. */
+  /**
+   * Start (or restart) a game: zero progress, status "playing", and everyone gets two different year cards.
+   * The cards are dealt BEFORE the room moves to "playing", so a phone never draws the game with an empty timeline
+   * and then redraws it a moment later (that was the flash when Start was pressed).
+   */
   begin(): Promise<void> {
     return this.serial(async () => {
+      await this.dealMissing((await this.d.session.state()).players);
       await this.d.session.updateRoom({
         mode: 'timeline', status: 'playing',
         settings: { roundsPlayed: 0, suddenDeath: [], winnerId: null, decidedBy: null },
       });
-      await this.dealMissing((await this.d.session.state()).players);
     });
   }
 
@@ -91,6 +97,7 @@ export class TimelineGame {
       if (picked.status === 'exhausted') return { status: 'exhausted', resetWouldHelp: picked.resetWouldHelp };
       const kind = suddenDeathContenders(s.room.settings).length > 0 ? 'sudden_death' : 'normal';
       const round = await this.d.session.startRound(picked.song.id, { kind, seconds: this.settings(s.room).roundSeconds });
+      this.roster = { roundId: round.id, ids: new Set(s.players.filter((p) => p.connected).map((p) => p.id)) };
       return { status: 'started', roundId: round.id, roundNo: round.round_no, kind, songId: picked.song.id };
     });
   }
@@ -105,14 +112,23 @@ export class TimelineGame {
   }
 
   /** Players the round waits for: connected, holding cards, and (in sudden death) one of the contenders. */
-  private static expected(s: Pick<HostState, 'room' | 'players'>): PlayerRow[] {
+  private static expected(s: Pick<HostState, 'room' | 'players'>, alsoExpected?: ReadonlySet<string> | null): PlayerRow[] {
     const contenders = suddenDeathContenders(s.room.settings);
-    return s.players.filter((p) => p.connected && canPlay(p) && (contenders.length === 0 || contenders.includes(p.id)));
+    return s.players.filter((p) => (p.connected || !!alsoExpected?.has(p.id)) && canPlay(p) && (contenders.length === 0 || contenders.includes(p.id)));
+  }
+
+  /** Players this round still waits for even if their phone has since gone quiet. */
+  private waitingFor(s: Pick<HostState, 'round'>): ReadonlySet<string> | null {
+    return this.roster && s.round && this.roster.roundId === s.round.id ? this.roster.ids : null;
+  }
+
+  progress(s: Pick<HostState, 'room' | 'players' | 'locked_player_ids' | 'round'>) {
+    return TimelineGame.progress(s, this.waitingFor(s));
   }
 
   /** Counts for the host's "N of M answered" line (numbers only, never who answered what). */
-  static progress(s: Pick<HostState, 'room' | 'players' | 'locked_player_ids'>) {
-    const expected = TimelineGame.expected(s);
+  static progress(s: Pick<HostState, 'room' | 'players' | 'locked_player_ids'>, alsoExpected?: ReadonlySet<string> | null) {
+    const expected = TimelineGame.expected(s, alsoExpected);
     const locked = expected.filter((p) => s.locked_player_ids.includes(p.id)).length;
     return { locked, expected: expected.length, everyone: expected.length > 0 && locked === expected.length };
   }
@@ -121,7 +137,7 @@ export class TimelineGame {
   async checkAutoEnd(): Promise<TimelineReveal | null> {
     const s = await this.d.session.state();
     if (gamePhase(s) !== 'listening' || !s.round) return null;
-    const early = everyoneLocked(TimelineGame.expected(s), s.locked_player_ids);
+    const early = everyoneLocked(TimelineGame.expected(s, this.waitingFor(s)), s.locked_player_ids, null, this.waitingFor(s));
     if (!early && !timerExpired(s.round.ends_at, this.now())) return null;
     return this.endRound();
   }

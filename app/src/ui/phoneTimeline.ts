@@ -2,6 +2,7 @@ import { CONFIG, ordinal, rankOf, slotLabel, yearRangeOf } from '../logic';
 import { sendTimelineAnswer, timelinePhoneView, winnerOf, type TimelinePhoneView, type TimelineReveal } from '../game';
 import type { MyState, PlayerRow, PublicRoomState } from '../net';
 import { h, show } from './dom';
+import { answerBlock } from './answerBlock';
 import type { PhoneGame, PhoneGameDeps } from './phoneGame';
 import { cardRow, createTimelinePicker, type TimelinePicker } from './timelinePicker';
 import { createYearPicker, type YearPicker } from './yearPicker';
@@ -216,6 +217,7 @@ export function createPhoneTimeline(root: HTMLElement, deps: PhoneGameDeps): Pho
       h('div', { class: 'big-message' },
         year !== undefined && h('p', { class: 'label' }, 'The year was'),
         year !== undefined && h('p', { class: 'locked-year', 'data-answer-year': String(year) }, String(year)),
+        answerBlock(reveal?.song),
         ...lines,
         h('p', { class: 'hint' }, `${plural(view.timeline.length, 'card')} in your timeline · ${plural(view.artistHits, 'artist hit')}`),
         ownRank(state)),

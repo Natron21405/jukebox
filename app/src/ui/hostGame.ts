@@ -148,7 +148,7 @@ export function createHostGame(root: HTMLElement, deps: HostGameDeps): HostGame 
       countdownEl.textContent = s === null ? '' : String(s);
       countdownEl.classList.toggle('low', s !== null && s <= 10);
     }
-    if (progressEl && hs) { const p = ClosestYearGame.progress(hs); progressEl.textContent = `${p.locked} of ${p.expected} locked in`; }
+    if (progressEl && hs) { const p = game ? game.progress(hs) : ClosestYearGame.progress(hs); progressEl.textContent = `${p.locked} of ${p.expected} locked in`; }
   }
 
   // ------------------------------------------------------------------ actions
@@ -228,7 +228,7 @@ export function createHostGame(root: HTMLElement, deps: HostGameDeps): HostGame 
   }
 
   function listeningScreen(s: HostState) {
-    const p = ClosestYearGame.progress(s);
+    const p = game ? game.progress(s) : ClosestYearGame.progress(s);
     countdownEl = h('div', { class: 'countdown-big', 'data-countdown': '', 'aria-live': 'off' });
     progressEl = h('p', { class: 'progress', 'data-progress': '' }, `${p.locked} of ${p.expected} locked in`);
     const sudden = s.round?.kind === 'sudden_death';
@@ -260,8 +260,11 @@ export function createHostGame(root: HTMLElement, deps: HostGameDeps): HostGame 
     }, label);
     return h('li', { class: 'reveal-row', 'data-player': name, 'data-total': String(row.total) },
       h('span', { class: 'rr-name' }, name),
-      h('span', { class: `rr-artist${row.artistHit ? ' hit' : ''}`, 'data-artist-hit': String(row.artistHit) }, `"${row.typed}" ${verdict}`),
-      h('span', { class: 'rr-override', 'data-override-for': name },
+      h('span', { class: 'rr-year', 'data-year-guess': row.year === null ? '' : String(row.year) }, row.year === null ? 'No year' : String(row.year)),
+      row.typed === ''
+        ? h('span', { class: 'rr-artist none', 'data-artist-hit': 'false' }, 'No artist typed')
+        : h('span', { class: `rr-artist${row.artistHit ? ' hit' : ''}`, 'data-artist-hit': String(row.artistHit) }, `"${row.typed}" ${verdict}`),
+      row.typed !== '' && h('span', { class: 'rr-override', 'data-override-for': name },
         btn('Count it', true, row.override === true), btn('Reject', false, row.override === false),
         row.override !== null && btn('Auto', null, false)));
   }
@@ -270,7 +273,7 @@ export function createHostGame(root: HTMLElement, deps: HostGameDeps): HostGame 
     const rv = s.round!.reveal as ClosestYearReveal;
     const byId = new Map(s.players.map((p) => [p.id, p]));
     const sudden = rv.kind === 'sudden_death';
-    const checks = rv.rows.filter((r) => r.typed !== '').sort((a, b) => (byId.get(a.playerId)?.name ?? '').localeCompare(byId.get(b.playerId)?.name ?? ''));
+    const checks = rv.rows.filter((r) => r.typed !== '' || r.year !== null).sort((a, b) => (byId.get(a.playerId)?.name ?? '').localeCompare(byId.get(b.playerId)?.name ?? ''));
     const marks = new Map<string, RoundMark>(rv.rows.map((r) => [r.playerId, {
       ...(sudden ? { note: r.year === null ? 'no answer' : r.distance === 0 ? 'spot on' : `off by ${r.distance}` } : { points: r.total }),
       artist: sudden || r.typed === '' ? 'none' : r.artistHit ? 'hit' : 'miss',
@@ -290,7 +293,7 @@ export function createHostGame(root: HTMLElement, deps: HostGameDeps): HostGame 
       leaderboardList('closestYear', board, marks),
       sudden && h('p', { class: 'hint' }, 'Sudden death does not change scores.'),
       !sudden && checks.length > 0 && checksPanel(s, checks.length,
-        h('summary', {}, `Check artist guesses (${checks.length})`),
+        h('summary', {}, `Check artist and year guesses (${checks.length})`),
         h('ul', { class: 'reveal-rows' }, ...checks.map((r) => checkLine(r, byId.get(r.playerId)?.name ?? '?')))),
       h('div', { class: 'row-actions' },
         h('button', { class: 'btn primary huge', 'data-action': 'next', disabled: busy ? true : null,

@@ -146,6 +146,8 @@ describe('Timeline, end to end (host + 3 phones, fake network and fake audio)', 
         const p = phones[i];
         const right = names[i] !== miss;
         expect(q(p, '[data-answer-year]')!.getAttribute('data-answer-year')).toBe(String(song.year));
+        expect(q(p, '[data-answer-song]')!.textContent).toBe(song.title); // the right answer, on the phone
+        expect(q(p, '[data-answer-artist]')!.textContent).toContain(song.artists[0]);
         expect(q(p, '[data-correct]')!.getAttribute('data-correct')).toBe(String(right));
         expect(p.querySelectorAll('.tl-card.newest').length).toBe(right ? 1 : 0);
         expect(p.querySelectorAll('[data-card-year]').length).toBe(expectedCards[i] + (right ? 1 : 0));

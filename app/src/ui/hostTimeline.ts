@@ -109,7 +109,7 @@ export function createHostTimeline(root: HTMLElement, deps: HostGameDeps): HostG
       countdownEl.textContent = s === null ? '' : String(s);
       countdownEl.classList.toggle('low', s !== null && s <= 10);
     }
-    if (progressEl && hs) { const p = TimelineGame.progress(hs); progressEl.textContent = `${p.locked} of ${p.expected} locked in`; }
+    if (progressEl && hs) { const p = game ? game.progress(hs) : TimelineGame.progress(hs); progressEl.textContent = `${p.locked} of ${p.expected} locked in`; }
   }
 
   // ------------------------------------------------------------------ actions
@@ -194,7 +194,7 @@ export function createHostTimeline(root: HTMLElement, deps: HostGameDeps): HostG
   }
 
   function listeningScreen(s: HostState) {
-    const p = TimelineGame.progress(s);
+    const p = game ? game.progress(s) : TimelineGame.progress(s);
     countdownEl = h('div', { class: 'countdown-big', 'data-countdown': '', 'aria-live': 'off' });
     progressEl = h('p', { class: 'progress', 'data-progress': '' }, `${p.locked} of ${p.expected} locked in`);
     const sudden = s.round?.kind === 'sudden_death';

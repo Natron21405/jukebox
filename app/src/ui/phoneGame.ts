@@ -2,6 +2,7 @@ import { CONFIG, ordinal, rankOf, yearRangeOf, type RevealRow } from '../logic';
 import { phoneView, sendAnswer, winnerOf, type PhoneView } from '../game';
 import type { MyState, PhoneSession, PlayerRow, PublicRoomState, StoredSeat } from '../net';
 import { h, show } from './dom';
+import { answerBlock, type RevealedSong } from './answerBlock';
 import { createYearPicker, type YearPicker } from './yearPicker';
 
 export interface PhoneGameDeps {
@@ -192,7 +193,7 @@ export function createPhoneGame(root: HTMLElement, deps: PhoneGameDeps): PhoneGa
   }
 
   function resultScreen(view: PhoneView, state: MyState) {
-    const reveal = state.round?.reveal as { song?: { year: number } } | null;
+    const reveal = state.round?.reveal as { song?: RevealedSong } | null;
     const year = reveal?.song?.year;
     const row: RevealRow | null = view.mine;
     const lines: Node[] = [];
@@ -210,6 +211,7 @@ export function createPhoneGame(root: HTMLElement, deps: PhoneGameDeps): PhoneGa
       h('div', { class: 'big-message' },
         year !== undefined && h('p', { class: 'label' }, 'The year was'),
         year !== undefined && h('p', { class: 'locked-year', 'data-answer-year': String(year) }, String(year)),
+        answerBlock(reveal?.song),
         ...lines,
         sudden
           ? h('p', { class: 'points' }, 'Sudden death: no points')

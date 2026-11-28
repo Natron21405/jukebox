@@ -431,6 +431,22 @@ describe('Timeline over the fake net', () => {
     expect(TimelineGame.progress(await r.host.state()).expected).toBe(4);
   });
 
+  it('keeps waiting for a player who drops out of presence mid-round, until the timer ends it', async () => {
+    const r = await rig(3);
+    await r.game.begin();
+    const next = await r.game.nextRound();
+    if (next.status !== 'started') throw new Error('expected a round');
+    const song = byId.get(next.songId)!;
+    const tl = await timelinesOf(r);
+    r.tick(15_000);
+    await r.fake.hostSetConnected(r.host.creds.roomId, r.host.creds.hostToken, r.ids.slice(0, 2));
+    for (let i = 0; i < 2; i++) await sendTimelineAnswer(r.phones[i], next.roundId, { slot: rightSlot(tl[i], song.year), artist: '', lock: true });
+    expect(await r.game.checkAutoEnd()).toBeNull();
+    expect(r.game.progress(await r.host.state())).toEqual({ locked: 2, expected: 3, everyone: false });
+    r.tick(CONFIG.roundSeconds * 1000);
+    expect(await r.game.checkAutoEnd()).not.toBeNull();
+  });
+
   it('treats junk slots as no answer, and reports exhaustion when the pool runs out', async () => {
     const r = await rig();
     await r.game.begin();

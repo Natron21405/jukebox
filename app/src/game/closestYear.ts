@@ -74,6 +74,8 @@ export class ClosestYearGame {
   private readonly songs: Map<string, GameSong>;
   private readonly now: () => number;
   private busy: Promise<unknown> = Promise.resolve();
+  /** Players who were connected when the current round opened (kept in memory; a refreshed host starts without it). */
+  private roster: { roundId: string; ids: Set<string> } | null = null;
 
   constructor(private readonly d: ClosestYearDeps) {
     this.songs = new Map(d.pool.map((s) => [s.id, s]));
@@ -119,6 +121,7 @@ export class ClosestYearGame {
       if (picked.status === 'exhausted') return { status: 'exhausted', resetWouldHelp: picked.resetWouldHelp };
       const kind = suddenDeathContenders(s.room.settings).length > 0 ? 'sudden_death' : 'normal';
       const round = await this.d.session.startRound(picked.song.id, { kind, seconds: this.settings(s.room).roundSeconds });
+      this.roster = { roundId: round.id, ids: new Set(s.players.filter((p) => p.connected).map((p) => p.id)) };
       return { status: 'started', roundId: round.id, roundNo: round.round_no, kind, songId: picked.song.id };
     });
   }
@@ -132,10 +135,19 @@ export class ClosestYearGame {
     });
   }
 
+  /** Players this round still waits for even if their phone has since gone quiet (see everyoneLocked). */
+  private waitingFor(s: Pick<HostState, 'round'>): ReadonlySet<string> | null {
+    return this.roster && s.round && this.roster.roundId === s.round.id ? this.roster.ids : null;
+  }
+
   /** Counts for the host's "N of M answered" line (numbers only, never who answered what). */
-  static progress(s: Pick<HostState, 'room' | 'players' | 'locked_player_ids'>) {
+  progress(s: Pick<HostState, 'room' | 'players' | 'locked_player_ids' | 'round'>) {
+    return ClosestYearGame.progress(s, this.waitingFor(s));
+  }
+
+  static progress(s: Pick<HostState, 'room' | 'players' | 'locked_player_ids'>, alsoExpected?: ReadonlySet<string> | null) {
     const contenders = suddenDeathContenders(s.room.settings);
-    const expected = s.players.filter((p) => p.connected && (contenders.length === 0 || contenders.includes(p.id)));
+    const expected = s.players.filter((p) => (p.connected || !!alsoExpected?.has(p.id)) && (contenders.length === 0 || contenders.includes(p.id)));
     const locked = expected.filter((p) => s.locked_player_ids.includes(p.id)).length;
     return { locked, expected: expected.length, everyone: expected.length > 0 && locked === expected.length };
   }
@@ -148,7 +160,7 @@ export class ClosestYearGame {
     const s = await this.d.session.state();
     if (gamePhase(s) !== 'listening' || !s.round) return null;
     const contenders = suddenDeathContenders(s.room.settings);
-    const early = everyoneLocked(s.players, s.locked_player_ids, contenders.length ? contenders : null);
+    const early = everyoneLocked(s.players, s.locked_player_ids, contenders.length ? contenders : null, this.waitingFor(s));
     if (!early && !timerExpired(s.round.ends_at, this.now())) return null;
     return this.endRound();
   }

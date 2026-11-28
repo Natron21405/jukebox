@@ -244,6 +244,35 @@ describe('Closest Year over the fake net', () => {
     expect(ClosestYearGame.progress(await r.host.state()).expected).toBe(3);
   });
 
+  it('keeps waiting for a player who was in at the start of the round but drops out of presence mid-round (locked screen)', async () => {
+    const r = await rig();
+    await r.game.begin();
+    const next = await r.game.nextRound();
+    if (next.status !== 'started') throw new Error('expected a round');
+    // Di's phone sleeps: the host flags it away after its last ping goes stale.
+    r.tick(15_000);
+    await r.fake.hostSetConnected(r.host.creds.roomId, r.host.creds.hostToken, r.ids.slice(0, 3));
+    expect((await r.host.state()).players.filter((p) => p.connected)).toHaveLength(3);
+    for (let i = 0; i < 3; i++) await sendAnswer(r.phones[i], next.roundId, { year: 1990, artist: '', lock: true });
+    expect(await r.game.checkAutoEnd()).toBeNull(); // Di is still expected: no early end
+    expect(r.game.progress(await r.host.state())).toEqual({ locked: 3, expected: 4, everyone: false });
+    await sendAnswer(r.phones[3], next.roundId, { year: 1991, artist: '', lock: true });
+    expect(await r.game.checkAutoEnd()).not.toBeNull();
+  });
+
+  it('still ends on the timer when the dropped player never comes back', async () => {
+    const r = await rig();
+    await r.game.begin();
+    const next = await r.game.nextRound();
+    if (next.status !== 'started') throw new Error('expected a round');
+    r.tick(15_000);
+    await r.fake.hostSetConnected(r.host.creds.roomId, r.host.creds.hostToken, r.ids.slice(0, 3));
+    for (let i = 0; i < 3; i++) await sendAnswer(r.phones[i], next.roundId, { year: 1990, artist: '', lock: true });
+    expect(await r.game.checkAutoEnd()).toBeNull();
+    r.tick(CONFIG.roundSeconds * 1000);
+    expect(await r.game.checkAutoEnd()).not.toBeNull();
+  });
+
   it('reports exhaustion when the pool runs out', async () => {
     const r = await rig();
     const small = new ClosestYearGame({ session: r.host, pool: POOL.slice(0, 2), rng: seededRng(1) });

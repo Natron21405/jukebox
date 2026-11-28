@@ -106,10 +106,10 @@ h1, h2, p { margin: 0; }
 }
 
 /* ---------- Year picker (phone) ---------- */
-.year-picker { display: flex; flex-direction: column; gap: 14px; user-select: none; -webkit-user-select: none; }
-.year-top { display: grid; grid-template-columns: 76px 1fr 76px; align-items: center; gap: 8px; }
-.year-readout { text-align: center; font-size: clamp(4rem, 22vw, 6rem); font-weight: 900; line-height: 1; font-variant-numeric: tabular-nums; color: var(--text); }
-.btn.step-btn { min-height: 76px; min-width: 76px; font-size: 2.6rem; padding: 0; touch-action: none; }
+.year-picker { --step-size: clamp(56px, 17vw, 76px); display: flex; flex-direction: column; gap: 14px; user-select: none; -webkit-user-select: none; }
+.year-top { display: grid; grid-template-columns: var(--step-size) minmax(0, 1fr) var(--step-size); align-items: center; gap: 8px; }
+.year-readout { text-align: center; font-size: clamp(2.6rem, 15vw, 5rem); font-weight: 900; line-height: 1; min-width: 0; white-space: nowrap; font-variant-numeric: tabular-nums; color: var(--text); }
+.btn.step-btn { min-height: var(--step-size); min-width: var(--step-size); width: var(--step-size); font-size: 2.4rem; padding: 0; touch-action: none; }
 .year-slider-wrap { position: relative; padding: 4px 14px 30px; }
 .year-slider { width: 100%; height: 44px; margin: 0; accent-color: var(--accent); touch-action: pan-y; background: transparent; }
 .year-ticks { position: absolute; left: 14px; right: 14px; bottom: 4px; height: 22px; pointer-events: none; }
@@ -130,6 +130,9 @@ h1, h2, p { margin: 0; }
 .big-message { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 12px; min-height: 50dvh; }
 .locked-badge { font-size: 1.6rem; font-weight: 900; color: var(--good); }
 .locked-year { font-size: 4.5rem; font-weight: 900; line-height: 1; font-variant-numeric: tabular-nums; }
+.answer-block { display: grid; gap: 2px; }
+.answer-title { margin: 0; font-size: 1.5rem; font-weight: 800; word-break: break-word; }
+.answer-artists { margin: 0; font-size: 1.15rem; color: var(--muted); word-break: break-word; }
 .locked-artist, .result-line { font-size: 1.2rem; }
 .points { font-size: 2.2rem; font-weight: 900; color: var(--accent); }
 .final-line { margin-top: 16px; display: flex; flex-direction: column; gap: 6px; align-items: center; }
@@ -161,6 +164,7 @@ h1, h2, p { margin: 0; }
 .rr-year { font-size: 1.5rem; font-weight: 800; font-variant-numeric: tabular-nums; }
 .rr-dist { color: var(--muted); }
 .rr-artist { color: var(--bad); }
+.rr-artist.none { color: var(--muted); }
 .rr-artist.hit { color: var(--good); }
 .rr-override { display: flex; gap: 6px; }
 .rr-total { font-size: 1.5rem; font-weight: 900; color: var(--accent); margin-left: auto; }

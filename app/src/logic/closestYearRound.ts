@@ -108,16 +108,19 @@ export function applyOverride(
 }
 
 /**
- * Has everyone who is expected locked in? Expected = players currently connected (a disconnected player counts as
- * no answer and never holds up the round), narrowed to the contenders in sudden death. Nobody expected = never early.
+ * Has everyone who is expected locked in? Expected = players currently connected, plus anyone in `alsoExpected` (the
+ * players who were connected when the round began: a phone that sleeps mid-round is flagged away, but it must not
+ * let the others end the round early; the timer still ends it). A player who was away from the start never holds up
+ * the round. Narrowed to the contenders in sudden death. Nobody expected = never early.
  */
 export function everyoneLocked(
   players: ReadonlyArray<{ id: string; connected: boolean }>,
   lockedIds: readonly string[],
   contenders?: readonly string[] | null,
+  alsoExpected?: ReadonlySet<string> | null,
 ): boolean {
   const locked = new Set(lockedIds);
-  const expected = players.filter((p) => p.connected && (!contenders || contenders.includes(p.id)));
+  const expected = players.filter((p) => (p.connected || !!alsoExpected?.has(p.id)) && (!contenders || contenders.includes(p.id)));
   return expected.length > 0 && expected.every((p) => locked.has(p.id));
 }
 

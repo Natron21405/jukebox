@@ -110,11 +110,21 @@ describe('one Closest Year round, end to end (host + 3 phones, fake network and 
     for (const p of phones) expect(q(p, '[data-answer-year]')!.getAttribute('data-answer-year')).toBe(String(year));
     const song = POOL.find((s) => s.year === year)!;
     expect(hostRoot.textContent).toContain(song.title);
+    // After the song, each phone shows the right answer (title and artist) as well as the year.
+    for (const p of phones) {
+      expect(q(p, '[data-answer-song]')!.textContent).toBe(song.title);
+      expect(q(p, '[data-answer-artist]')!.textContent).toContain(song.artists[0]);
+    }
 
     // Borderline artist control: reject, then count, one player's typed guess.
     // The artist panel is opened by hand, and a redraw (the override below refreshes the whole screen) must not close it.
     const panel = () => q<HTMLDetailsElement>(hostRoot, 'details.artist-checks')!;
     panel().open = true; fire(panel(), 'toggle');
+    // The host's check panel lists every player's year guess too, and has no override control for the year.
+    ['Ana', 'Ben', 'Cy'].forEach((n, i) => {
+      expect(q(hostRoot, `.reveal-row[data-player=${n}] [data-year-guess]`)!.getAttribute('data-year-guess')).toBe(String(1989 + i));
+    });
+    expect(hostRoot.querySelectorAll('.reveal-row [data-override]').length).toBe(3 * 2); // Count it / Reject for each typed artist, nothing for years
     const row = q(hostRoot, '.reveal-row[data-player=Cy]')!;
     const before = Number(row.getAttribute('data-total'));
     q(row, '[data-override=true]')!.click();
